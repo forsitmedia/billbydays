@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BillbyDays · Final split</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Favicon Base -->
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+
+<!-- Standard PNG Icons -->
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+
+<!-- Apple iOS Icon -->
+<link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png">
+
+<!-- Android / PWA -->
+<link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512.png">
+
+<!-- Optional: theme color (browser UI color) -->
+<meta name="theme-color" content="#3b82f6">
+
+  <style>
+    :root {
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --border: #e5e7eb;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --bg: #f9fafb;
+      --card-bg: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 32px 16px;
+      color: var(--text-main);
+    }
+
+    .app {
+      width: 100%;
+      max-width: 900px;
+      background: var(--card-bg);
+      border-radius: 24px;
+      border: 1px solid #e5e7eb;
+      padding: 24px 28px 28px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+    }
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+
+.app-logo {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  display: block;
+}
+
+.title-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 10px;
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .app-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .app-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .step-pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .big-title {
+      font-size: 20px;
+      font-weight: 650;
+      margin-bottom: 12px;
+    }
+
+    .big-title span {
+      color: var(--green);
+    }
+
+    .summary-header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .summary-chip {
+      border-radius: 999px;
+      border: 1px dashed #d1d5db;
+      padding: 6px 10px;
+      background: #f9fafb;
+    }
+
+    .summary-chip strong {
+      color: var(--text-main);
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .person-card {
+      border-radius: 18px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      padding: 14px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .color-strip {
+      position: absolute;
+      inset: 0;
+      opacity: 0.12;
+      pointer-events: none;
+    }
+
+    .person-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .person-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      color: var(--text-muted);
+    }
+
+    .person-main-amount {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .person-main-amount span {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .person-details {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .person-details span {
+      color: var(--text-main);
+      font-weight: 500;
+    }
+
+    .footer-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .footer-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 14px;
+      gap: 8px;
+    }
+
+    .secondary-btn,
+    .primary-btn {
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .secondary-btn {
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      color: var(--text-main);
+    }
+
+    .primary-btn {
+      border: none;
+      background: var(--green);
+      color: #ffffff;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .primary-btn span {
+      font-size: 15px;
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        padding: 18px 16px 20px;
+      }
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+        .more-stats {
+      margin-top: 8px;
+      padding: 10px 14px 12px;
+      border-radius: 16px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      font-size: 12px;
+    }
+
+    .more-stats.hidden {
+      display: none;
+    }
+
+    .more-stats-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .stats-line {
+      font-size: 12px;
+      color: #4b5563;
+      margin-top: 3px;
+    }
+
+    /* FULLSCREEN OVERLAY */
+.fc-overlay {
+  position: fixed;
+  inset: 0;
+  background: #ffffff;
+  z-index: 9999;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.fc-overlay.hidden {
+  display: none;
+}
+
+.fc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fc-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.fc-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.fc-subtitle {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* CALENDAR GRID */
+.fc-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 10px;
+}
+
+/* day square */
+.fc-day {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  aspect-ratio: 1 / 1;
+  position: relative;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.fc-day-number {
+  font-size: 12px;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  color: #374151;
+}
+
+/* segments */
+.fc-seg {
+  height: 10px;
+  width: 100%;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+/* INFO BOX */
+.fc-info {
+  margin-top: 18px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+}
+
+.fc-info.hidden {
+  display: none;
+}
+
+.fc-info-date {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.fc-info-content {
+  font-size: 13px;
+}
+
+
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+  <div class="title-row">
+    <img src="logo.png" alt="App logo" class="app-logo" />
+    <div class="title-text">
+      <div class="app-title">Bill by Days</div>
+      <div class="app-subtitle">Step 3 · Final electricity split</div>
+    </div>
+  </div>
+
+  <div class="step-pill" id="periodPill">Period</div>
+</header>
+
+
+    <h2 class="big-title">
+      Here’s what each roommate has to <span>pay</span>.
+    </h2>
+
+    <div class="summary-header">
+      <div class="summary-chip">
+        Total bill: <strong>€<span id="sumBill">0.00</span></strong>
+      </div>
+      <div class="summary-chip">
+        Period: <strong id="summaryPeriod">–</strong>
+      </div>
+      <div class="summary-chip">
+        Total days: <strong id="summaryDays">–</strong>
+      </div>
+      <div class="summary-chip">
+        Roommates: <strong id="summaryRoommates">–</strong>
+      </div>
+    </div>
+
+    <div class="cards-grid" id="cardsGrid">
+      <!-- roommate cards here -->
+    </div>
+        <!-- More stats toggle -->
+    <button class="secondary-btn" type="button" id="toggleStatsBtn" style="margin-top:4px;">
+      More stats ▾
+    </button>
+
+    <section class="more-stats hidden" id="moreStats">
+      <div class="more-stats-title">Cost per day</div>
+      <div class="stats-line">
+        Overall energy cost per day:
+        <strong>€<span id="overallPerDay">0.00</span></strong>
+      </div>
+
+      <div id="perDayList"></div>
+
+      <!-- FULLSCREEN CALENDAR OVERLAY -->
+<div id="fullCalendarOverlay" class="fc-overlay hidden">
+  <div class="fc-header">
+    <div class="fc-title">Presence calendar</div>
+    <button id="fcCloseBtn" class="fc-close">✕</button>
+  </div>
+
+  <div class="fc-subtitle">
+    Tap a day to see who was home and how that day was split.
+  </div>
+
+  <div id="fcGrid" class="fc-grid"></div>
+
+  <div id="fcInfo" class="fc-info hidden">
+    <div class="fc-info-date" id="fcInfoDate"></div>
+    <div class="fc-info-content" id="fcInfoContent"></div>
+  </div>
+</div>
+
+<!-- BUTTON TO OPEN FULL CALENDAR -->
+<button class="primary-btn" id="openFullCalendar" style="margin-top:10px;">
+  View full calendar 📅
+</button>
+
+    </section>
+
+    
+
+    <div class="footer-note">
+      <div>
+        Each day counts as 1 point.  
+        If someone is home, that day is divided only between those at home.  
+        If nobody is home, the day is split equally between everyone.
+      </div>
+      <div id="checkSumText"></div>
+    </div>
+
+    <div class="footer-actions">
+      <button class="secondary-btn" type="button" id="backBtn">← Edit absences</button>
+      <button class="primary-btn" type="button" id="restartBtn">
+        Start again <span>↺</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ----- Load data from previous steps -----
+    let roommates = [];
+    let billAmount = 0;
+    let startDate = null;
+    let endDate = null;
+    let absencesRaw = [];
+
+    try {
+      billAmount = parseFloat(localStorage.getItem("splitroomBill") || "0");
+      const startISO = localStorage.getItem("splitroomStart");
+      const endISO = localStorage.getItem("splitroomEnd");
+      const rmJSON = localStorage.getItem("splitroomRoommates");
+      const absJSON = localStorage.getItem("splitroomAbsences");
+
+      if (startISO && endISO) {
+        startDate = new Date(startISO);
+        endDate = new Date(endISO);
+      }
+      roommates = rmJSON ? JSON.parse(rmJSON) : [];
+      absencesRaw = absJSON ? JSON.parse(absJSON) : [];
+    } catch (e) {
+      console.error("localStorage error", e);
+    }
+
+    // Fallback so it doesn't crash if opened alone
+    if (!startDate || !endDate || roommates.length === 0 || !billAmount) {
+      const today = new Date();
+      endDate = new Date(today);
+      startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - 6);
+      roommates = ["Roommate 1", "Roommate 2"];
+      billAmount = 100;
+      absencesRaw = roommates.map(() => []);
+    }
+
+    startDate.setHours(0,0,0,0);
+    endDate.setHours(0,0,0,0);
+
+    // Convert absences list to Sets for fast lookup
+    const absences = roommates.map((_, i) => {
+      const arr = Array.isArray(absencesRaw[i]) ? absencesRaw[i] : [];
+      return new Set(arr);
+    });
+
+    function formatDate(date) {
+      const d = String(date.getDate()).padStart(2, "0");
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const y = date.getFullYear();
+      return `${d}/${m}/${y}`;
+    }
+
+    function dateToKey(date) {
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${date.getFullYear()}-${m}-${d}`;
+    }
+
+    const colorPalette = [
+      { bg: "#fee2e2", border: "#ef4444" }, // red
+      { bg: "#dbeafe", border: "#3b82f6" }, // blue
+      { bg: "#fef3c7", border: "#f59e0b" }, // yellow
+      { bg: "#e0f2fe", border: "#0ea5e9" }, // light blue
+      { bg: "#ede9fe", border: "#8b5cf6" }, // violet
+      { bg: "#dcfce7", border: "#22c55e" }, // green
+    ];
+    function colorForIndex(i) {
+      return colorPalette[i % colorPalette.length];
+    }
+
+    // ----- DOM refs -----
+    const periodPill = document.getElementById("periodPill");
+    const sumBillEl = document.getElementById("sumBill");
+    const summaryPeriodEl = document.getElementById("summaryPeriod");
+    const summaryDaysEl = document.getElementById("summaryDays");
+    const summaryRoommatesEl = document.getElementById("summaryRoommates");
+    const cardsGrid = document.getElementById("cardsGrid");
+    const checkSumText = document.getElementById("checkSumText");
+    const backBtn = document.getElementById("backBtn");
+    const restartBtn = document.getElementById("restartBtn");
+
+    // ----- High-level info -----
+    const diffMs = endDate - startDate;
+    const totalDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
+
+    periodPill.textContent = `Period · ${formatDate(startDate)} → ${formatDate(endDate)}`;
+    sumBillEl.textContent = billAmount.toFixed(2);
+    summaryPeriodEl.textContent = `${formatDate(startDate)} → ${formatDate(endDate)}`;
+    summaryDaysEl.textContent = totalDays;
+    summaryRoommatesEl.textContent = roommates.length;
+
+    // ----- Core logic: compute points -----
+    const points = roommates.map(() => 0);
+    const daysPresent = roommates.map(() => 0);
+    const daysAway = roommates.map(() => 0);
+
+    let cursor = new Date(startDate);
+
+    while (cursor <= endDate) {
+      const key = dateToKey(cursor);
+
+      // presence per roommate
+      const presentFlags = roommates.map((_, i) => {
+        const isAway = absences[i].has(key);
+        return isAway ? 0 : 1;
+      });
+
+      const presentCount = presentFlags.reduce((a, b) => a + b, 0);
+
+      if (presentCount > 0) {
+        const perPresent = 1 / presentCount;
+        presentFlags.forEach((p, i) => {
+          if (p === 1) {
+            points[i] += perPresent;
+            daysPresent[i] += 1;
+          } else {
+            daysAway[i] += 1;
+          }
+        });
+      } else {
+        // everyone away: split equally
+        const perAll = 1 / roommates.length;
+        roommates.forEach((_, i) => {
+          points[i] += perAll;
+          daysAway[i] += 1;
+        });
+      }
+
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const totalPoints = points.reduce((a, b) => a + b, 0); // should equal totalDays
+    // ----- Extra stats: cost per day -----
+    const toggleStatsBtn = document.getElementById("toggleStatsBtn");
+    const moreStats = document.getElementById("moreStats");
+    const overallPerDayEl = document.getElementById("overallPerDay");
+    const perDayListEl = document.getElementById("perDayList");
+
+    function buildExtraStats() {
+      const perDayOverall = billAmount / totalDays;
+      overallPerDayEl.textContent = perDayOverall.toFixed(2);
+
+      perDayListEl.innerHTML = "";
+      roommates.forEach((name, i) => {
+        const line = document.createElement("div");
+        line.className = "stats-line";
+        const displayName = name || `Roommate ${i + 1}`;
+        const perDay = amounts[i] / totalDays;
+        line.innerHTML = `${displayName}: <strong>€${perDay.toFixed(2)}</strong> per day`;
+        perDayListEl.appendChild(line);
+      });
+    }
+
+    // Amount per roommate
+    const amounts = points.map(p => (p / totalPoints) * billAmount);
+
+    // ----- Render cards -----
+    function renderCards() {
+      cardsGrid.innerHTML = "";
+
+      roommates.forEach((name, i) => {
+        const col = colorForIndex(i);
+        const card = document.createElement("div");
+        card.className = "person-card";
+
+        // background strip
+        const strip = document.createElement("div");
+        strip.className = "color-strip";
+        strip.style.background = `linear-gradient(135deg, ${col.bg}, transparent)`;
+        card.appendChild(strip);
+
+        const header = document.createElement("div");
+        header.className = "person-header";
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "person-name";
+        nameEl.textContent = name || `Roommate ${i + 1}`;
+
+        const badge = document.createElement("div");
+        badge.className = "badge";
+        const perc = (amounts[i] / billAmount) * 100;
+        badge.textContent = perc.toFixed(1) + "% of bill";
+
+        header.appendChild(nameEl);
+        header.appendChild(badge);
+
+        const mainAmount = document.createElement("div");
+        mainAmount.className = "person-main-amount";
+        mainAmount.innerHTML = `€${amounts[i].toFixed(2)} <span>${points[i].toFixed(2)} points</span>`;
+
+        const details = document.createElement("div");
+        details.className = "person-details";
+        details.innerHTML = `
+          <div>Present days: <span>${daysPresent[i]}</span></div>
+          <div>Away days: <span>${daysAway[i]}</span></div>
+        `;
+
+        card.appendChild(header);
+        card.appendChild(mainAmount);
+        card.appendChild(details);
+
+        cardsGrid.appendChild(card);
+      });
+
+      // Check sum
+      const sumAmounts = amounts.reduce((a, b) => a + b, 0);
+      const diff = sumAmounts - billAmount;
+      const ok = Math.abs(diff) < 0.01; // 1 cent tolerance
+
+      checkSumText.textContent = ok
+        ? `Check: all shares add up to €${sumAmounts.toFixed(2)} (matches your bill).`
+        : `Warning: rounding diff of €${diff.toFixed(2)}.`;
+    }
+
+    renderCards();
+    buildExtraStats();
+    // ----- Mini visual calendar (simple version) -----
+
+    // ---------------- FULLSCREEN CALENDAR ---------------- //
+
+const openFullCalendar = document.getElementById("openFullCalendar");
+const fullCalendarOverlay = document.getElementById("fullCalendarOverlay");
+const fcCloseBtn = document.getElementById("fcCloseBtn");
+const fcGrid = document.getElementById("fcGrid");
+const fcInfo = document.getElementById("fcInfo");
+const fcInfoDate = document.getElementById("fcInfoDate");
+const fcInfoContent = document.getElementById("fcInfoContent");
+
+openFullCalendar.addEventListener("click", () => {
+  buildFullCalendar();
+  fullCalendarOverlay.classList.remove("hidden");
+});
+
+fcCloseBtn.addEventListener("click", () => {
+  fullCalendarOverlay.classList.add("hidden");
+  fcInfo.classList.add("hidden");
+});
+
+// Build full visual calendar
+function buildFullCalendar() {
+  fcGrid.innerHTML = "";
+
+  let cursor = new Date(startDate);
+
+  while (cursor <= endDate) {
+    const key = dateToKey(cursor);
+
+    const dayDiv = document.createElement("div");
+    dayDiv.className = "fc-day";
+
+    // Create left column (date info)
+const leftCol = document.createElement("div");
+leftCol.style.display = "flex";
+leftCol.style.flexDirection = "column";
+leftCol.style.alignItems = "flex-start";
+leftCol.style.justifyContent = "flex-start";
+leftCol.style.width = "40px";        // fixed width column
+leftCol.style.padding = "6px 0";
+leftCol.style.gap = "2px";
+
+leftCol.innerHTML = `
+  <div style="font-size:18px;font-weight:700;color:#111827;">
+    ${cursor.getDate()}
+  </div>
+  <div style="font-size:11px;color:#6b7280;margin-top:2px;">
+    ${cursor.toLocaleDateString("en-GB", { month: "short" })}
+  </div>
+  <div style="font-size:11px;color:#9ca3af;margin-top:-2px;">
+    ${cursor.toLocaleDateString("en-GB", { weekday: "short" })}
+  </div>
+`;
+
+// Create right column (presence bars)
+const rightCol = document.createElement("div");
+rightCol.style.display = "flex";
+rightCol.style.flexDirection = "column";
+rightCol.style.flex = "1";
+rightCol.style.gap = "6px";
+rightCol.style.paddingTop = "10px";
+rightCol.style.marginLeft = "6px";
+
+// Add a bar for each roommate
+roommates.forEach((_, i) => {
+  const bar = document.createElement("div");
+  bar.style.height = "10px";
+  bar.style.borderRadius = "999px";
+  bar.style.background = absences[i].has(dateToKey(cursor))
+    ? "#d1d5db"            // away
+    : colorForIndex(i).border; // present
+  rightCol.appendChild(bar);
+});
+
+// Row layout: left = date, right = bars
+const row = document.createElement("div");
+row.style.display = "flex";
+row.style.width = "100%";
+row.style.height = "100%";
+row.appendChild(leftCol);
+row.appendChild(rightCol);
+
+dayDiv.appendChild(row);
+
+
+    const present = roommates.map((_, i) => !absences[i].has(key));
+    const presentCount = present.filter(Boolean).length;
+
+  
+
+    // click → show info
+   const dayDate = new Date(cursor); // freeze correct date for this square
+
+dayDiv.addEventListener("click", () => {
+  fcInfo.classList.remove("hidden");
+
+  const weekday = dayDate.toLocaleDateString("en-GB", { weekday: "long" });
+  const formatted = dayDate.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+
+  fcInfoDate.textContent = `${weekday}, ${formatted}`;
+  
+  let html = "";
+  roommates.forEach((name, i) => {
+    const wasPresent = !absences[i].has(dateToKey(dayDate));
+    html += `
+      <div style="margin-bottom:4px;">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:3px;
+        background:${wasPresent ? colorForIndex(i).border : "#d1d5db"};"></span>
+        ${name || `Roommate ${i + 1}`}
+        — <strong>${wasPresent ? "present" : "away"}</strong>
+      </div>
+    `;
+  });
+  
+  fcInfoContent.innerHTML = html;
+});
+
+
+    fcGrid.appendChild(dayDiv);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+}
+
+
+
+// Toggle visibility of extra stats
+toggleStatsBtn.addEventListener("click", () => {
+  const isHidden = moreStats.classList.toggle("hidden");
+  toggleStatsBtn.textContent = isHidden ? "More stats ▾" : "Hide stats ▴";
+});
+
+    
+
+    // ----- Buttons -----
+    backBtn.addEventListener("click", () => {
+      window.location.href = "step2.html";
+    });
+
+    restartBtn.addEventListener("click", () => {
+      if (confirm("Clear everything and start again?")) {
+        localStorage.removeItem("splitroomBill");
+        localStorage.removeItem("splitroomStart");
+        localStorage.removeItem("splitroomEnd");
+        localStorage.removeItem("splitroomRoommates");
+        localStorage.removeItem("splitroomAbsences");
+        window.location.href = "index.html";
+      }
+    });
+  </script>
+</body>
+</html>

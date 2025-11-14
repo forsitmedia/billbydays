@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BillbyDays · Fair Roommate Bills</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Favicon Base -->
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+
+<!-- Standard PNG Icons -->
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+
+<!-- Apple iOS Icon -->
+<link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png">
+
+<!-- Android / PWA -->
+<link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512.png">
+
+<!-- Optional: theme color (browser UI color) -->
+<meta name="theme-color" content="#3b82f6">
+
+  <style>
+
+    
+    :root {
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --border: #e5e7eb;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --bg: #f9fafb;
+      --card-bg: #ffffff;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 32px 16px;
+      color: var(--text-main);
+    }
+
+    .app {
+      width: 100%;
+      max-width: 900px;
+      background: var(--card-bg);
+      border-radius: 24px;
+      border: 1px solid #e5e7eb;
+      padding: 24px 28px 28px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+    }
+
+    .title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-logo {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  display: block;
+}
+
+.title-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .app-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .app-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .step-pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    /* Top section: bill amount + date range */
+    .top-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 18px 18px 20px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: #ffffff;
+      margin-bottom: 24px;
+    }
+
+    .top-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .field-group {
+      flex: 1 1 230px;
+      min-width: 0;
+    }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .field-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      background: #f9fafb;
+    }
+
+    .field input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 14px;
+      width: 100%;
+      color: var(--text-main);
+    }
+
+    .field input::placeholder {
+      color: #9ca3af;
+    }
+
+    .field-prefix {
+      font-size: 14px;
+      color: var(--text-muted);
+      padding-right: 6px;
+      border-right: 1px solid #e5e7eb;
+    }
+
+    .date-display {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      cursor: pointer;
+    }
+
+    .date-main {
+      font-size: 14px;
+    }
+
+    .date-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .date-icon {
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+
+    .top-note {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Roommates section */
+    .section-heading {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .section-subheading {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .roommates-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .roommate-card,
+    .add-card {
+      width: 160px;
+      height: 110px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .roommate-card {
+      align-items: stretch;
+      padding: 10px 12px;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .roommate-name {
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      padding: 6px 8px;
+      font-size: 13px;
+      font-weight: 500;
+      background: #f9fafb;
+      cursor: text;
+    }
+
+    .roommate-name[contenteditable="true"]:focus {
+      outline: none;
+      border-color: var(--green);
+      box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.25);
+      background: #ffffff;
+    }
+
+    .roommate-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .roommate-remove {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 16px;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .roommate-remove:hover {
+      color: #4b5563;
+    }
+
+    .add-card {
+      cursor: pointer;
+      border-style: dashed;
+      background: #f9fafb;
+    }
+
+    .add-plus {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: var(--green-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--green);
+      font-size: 22px;
+      font-weight: 500;
+    }
+
+    .add-text {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .footer-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+
+    .continue-btn {
+      border-radius: 999px;
+      padding: 10px 18px;
+      border: none;
+      background: var(--green);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .continue-btn span {
+      font-size: 16px;
+    }
+
+    /* Calendar overlay */
+    .calendar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.25);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .calendar-modal {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 16px 18px 18px;
+      border: 1px solid #e5e7eb;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .calendar-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .calendar-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .calendar-month-nav {
+      display: flex;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      font-size: 11px;
+      margin-top: 6px;
+    }
+
+    .calendar-day-name {
+      text-align: center;
+      padding: 4px 0;
+      color: var(--text-muted);
+    }
+
+    .calendar-day {
+      text-align: center;
+      padding: 6px 0;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-main);
+    }
+
+    .calendar-day.disabled {
+      opacity: 0.25;
+      cursor: default;
+    }
+
+    .calendar-day.in-range {
+      background: #dcfce7;
+      color: var(--text-main);
+    }
+
+    .calendar-day.start,
+    .calendar-day.end {
+      background: var(--green);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .calendar-footer {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .calendar-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .secondary-btn,
+    .primary-btn-small {
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .secondary-btn {
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      color: var(--text-main);
+    }
+
+    .primary-btn-small {
+      border: none;
+      background: var(--green);
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        padding: 18px 16px 20px;
+        border-radius: 18px;
+      }
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .top-section {
+        padding: 14px 14px 16px;
+      }
+    }
+
+        .how-section {
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .how-title {
+      font-size: 18px;
+      font-weight: 650;
+      margin-bottom: 6px;
+    }
+
+    .how-intro {
+      font-size: 13px;
+      color: var(--text-muted, #6b7280);
+      margin-bottom: 12px;
+    }
+
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .how-card {
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      padding: 10px 12px 12px;
+      font-size: 13px;
+    }
+
+    .how-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .how-card p {
+      font-size: 12px;
+      color: #4b5563;
+      line-height: 1.4;
+    }
+
+    .how-step-label {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #dcfce7;
+      color: #166534;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .how-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app">
+ <header>
+  <div class="title-row">
+    <img src="logo.png" alt="App logo" class="app-logo" />
+    <div class="title-text">
+      <div class="app-title">Bill by Days</div>
+      <div class="app-subtitle">Step 1 · Add your bill and roommates</div>
+    </div>
+  </div>
+
+  <div class="step-pill">Electricity · Wi-Fi · Utilities</div>
+</header>
+
+
+
+    <!-- TOP: BILL + PERIOD -->
+    <section class="top-section">
+      <div class="top-row">
+        <!-- Bill amount -->
+        <div class="field-group">
+          <div class="field-label">Total bill amount</div>
+          <div class="field-sub">The full amount on your bill.</div>
+          <div class="field">
+            <div class="field-prefix">€</div>
+            <input id="billAmount" type="number" min="0" step="0.01"
+                   placeholder="e.g. 145.56" />
+          </div>
+        </div>
+
+        <!-- Bill period -->
+        <div class="field-group">
+          <div class="field-label">Bill period</div>
+          <div class="field-sub">Select the exact dates on your bill.</div>
+          <div class="field" id="dateRangeField">
+            <div class="date-icon">📅</div>
+            <div class="date-display">
+              <div class="date-main" id="dateRangeMain">
+                Select start & end date
+              </div>
+              <div class="date-sub" id="dateRangeSub">
+                Past dates allowed
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="top-note">
+        Bill will later use this period to count how many days each roommate was at home.
+      </div>
+    </section>
+
+    <!-- ROOMMATES -->
+    <section>
+      <div class="section-heading">Roommates</div>
+      <div class="section-subheading">
+        Click the square to add a roommate. Then tap the name to rename (e.g. “Luna”).
+      </div>
+
+      <div class="roommates-grid" id="roommatesGrid">
+        <!-- Add card is injected by JS -->
+      </div>
+
+      <div class="footer-actions">
+        <button class="continue-btn" id="continueBtn" type="button">
+          Continue <span>→</span>
+        </button>
+      </div>
+          <!-- HOW IT WORKS -->
+    <section class="how-section">
+      <h2 class="how-title">How Bill by Days works</h2>
+      <p class="how-intro">
+        We use the bill period and your days at home to share the cost in a fair way for everyone.
+      </p>
+
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-step-label">Step 1</div>
+          <h3>Bill & roommates</h3>
+          <p>
+            Enter the total bill amount, select the exact dates on the bill, and add all the roommates
+            who share this bill.
+          </p>
+        </div>
+
+        <div class="how-card">
+          <div class="how-step-label">Step 2</div>
+          <h3>Mark days you were away</h3>
+          <p>
+            For each roommate, mark the days they were <strong>not at home</strong> during the period.
+            Normal click selects a range. <strong>Shift + click</strong> toggles a single day on/off.
+          </p>
+        </div>
+
+        <div class="how-card">
+          <div class="how-step-label">Step 3</div>
+          <h3>We compute the fair share</h3>
+          <p>
+            Each day equals <strong>1 total point</strong>.  
+That point is split only among the roommates who were at home:
+if 1 person is home → they get 1 point;  
+if 4 are home → each gets 0.25;  
+if nobody is home → everyone gets an equal share.
+
+Your cost = <strong>(your points ÷ all points) × bill amount</strong>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    </section>
+  </div>
+
+  <!-- CALENDAR OVERLAY -->
+  <div class="calendar-overlay" id="calendarOverlay">
+    <div class="calendar-modal">
+      <div class="calendar-header">
+        <div>
+          <div class="calendar-title" id="calendarMonthLabel">Month Year</div>
+          <div class="calendar-sub">Click a start date, then an end date.</div>
+        </div>
+        <div class="calendar-month-nav">
+          <button class="icon-btn" id="prevMonthBtn" type="button">‹</button>
+          <button class="icon-btn" id="nextMonthBtn" type="button">›</button>
+        </div>
+      </div>
+
+      <div class="calendar-grid" id="calendarGrid">
+        <!-- Days rendered by JS -->
+      </div>
+
+      <div class="calendar-footer">
+        <div id="selectedRangeHint">No dates selected yet.</div>
+        <div class="calendar-actions">
+          <button class="secondary-btn" type="button" id="calendarCancelBtn">Cancel</button>
+          <button class="primary-btn-small" type="button" id="calendarApplyBtn">Apply</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // -----------------------
+  // DATE RANGE PICKER
+  // -----------------------
+  const dateRangeField = document.getElementById("dateRangeField");
+  const calendarOverlay = document.getElementById("calendarOverlay");
+  const calendarGrid = document.getElementById("calendarGrid");
+  const calendarMonthLabel = document.getElementById("calendarMonthLabel");
+  const prevMonthBtn = document.getElementById("prevMonthBtn");
+  const nextMonthBtn = document.getElementById("nextMonthBtn");
+  const calendarCancelBtn = document.getElementById("calendarCancelBtn");
+  const calendarApplyBtn = document.getElementById("calendarApplyBtn");
+  const selectedRangeHint = document.getElementById("selectedRangeHint");
+  const dateRangeMain = document.getElementById("dateRangeMain");
+  const dateRangeSub = document.getElementById("dateRangeSub");
+
+  let currentMonth = new Date().getMonth();
+  let currentYear = new Date().getFullYear();
+
+  let tempStart = null;
+  let tempEnd = null;
+  let finalStart = null;
+  let finalEnd = null;
+
+  const dayNames = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+
+  function openCalendar() {
+    calendarOverlay.style.display = "flex";
+
+    // Recenter on already selected start date, if any
+    if (finalStart) {
+      currentMonth = finalStart.getMonth();
+      currentYear = finalStart.getFullYear();
+    }
+
+    tempStart = finalStart;
+    tempEnd = finalEnd;
+    renderCalendar(currentYear, currentMonth);
+    updateHint();
+  }
+
+  function closeCalendar() {
+    calendarOverlay.style.display = "none";
+  }
+
+  function formatDate(date) {
+    if (!date) return "";
+    const d = String(date.getDate()).padStart(2, "0");
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
+  }
+
+  function dateToKey(date) {
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${date.getFullYear()}-${m}-${d}`;
+  }
+
+  function isSameDay(a, b) {
+    return a && b &&
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate();
+  }
+
+  function isBetween(date, start, end) {
+    if (!start || !end) return false;
+    const t = date.setHours(0,0,0,0);
+    const s = start.setHours(0,0,0,0);
+    const e = end.setHours(0,0,0,0);
+    return t >= s && t <= e;
+  }
+
+  function renderCalendar(year, month) {
+    calendarGrid.innerHTML = "";
+    // Day names
+    dayNames.forEach(name => {
+      const div = document.createElement("div");
+      div.className = "calendar-day-name";
+      div.textContent = name;
+      calendarGrid.appendChild(div);
+    });
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const firstWeekDay = (firstDay.getDay() + 6) % 7; // Monday-based
+
+    calendarMonthLabel.textContent = firstDay.toLocaleString("default", {
+      month: "long",
+      year: "numeric",
+    });
+
+    // Empty cells before first day
+    for (let i = 0; i < firstWeekDay; i++) {
+      const div = document.createElement("div");
+      div.className = "calendar-day disabled";
+      calendarGrid.appendChild(div);
+    }
+
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(year, month, d);
+      const div = document.createElement("div");
+      div.className = "calendar-day";
+      div.textContent = d;
+      div.dataset.dateKey = dateToKey(date);
+
+      if (tempStart && isSameDay(date, tempStart)) {
+        div.classList.add("start");
+      }
+      if (tempEnd && isSameDay(date, tempEnd)) {
+        div.classList.add("end");
+      }
+      if (tempStart && tempEnd && isBetween(new Date(date), new Date(tempStart), new Date(tempEnd))) {
+        div.classList.add("in-range");
+      }
+
+      div.addEventListener("click", () => handleDayClick(date));
+      calendarGrid.appendChild(div);
+    }
+  }
+
+  function handleDayClick(date) {
+    if (!tempStart || (tempStart && tempEnd)) {
+      tempStart = new Date(date);
+      tempEnd = null;
+    } else if (!tempEnd) {
+      if (date < tempStart) {
+        tempEnd = tempStart;
+        tempStart = new Date(date);
+      } else {
+        tempEnd = new Date(date);
+      }
+    } else {
+      tempStart = new Date(date);
+      tempEnd = null;
+    }
+    renderCalendar(currentYear, currentMonth);
+    updateHint();
+  }
+
+  function updateHint() {
+    if (tempStart && tempEnd) {
+      selectedRangeHint.textContent =
+        `${formatDate(tempStart)} → ${formatDate(tempEnd)}`;
+    } else if (tempStart) {
+      selectedRangeHint.textContent =
+        `Start: ${formatDate(tempStart)} — now choose an end date`;
+    } else {
+      selectedRangeHint.textContent = "No dates selected yet.";
+    }
+  }
+
+  dateRangeField.addEventListener("click", openCalendar);
+
+  prevMonthBtn.addEventListener("click", () => {
+    if (currentMonth === 0) {
+      currentMonth = 11;
+      currentYear--;
+    } else {
+      currentMonth--;
+    }
+    renderCalendar(currentYear, currentMonth);
+  });
+
+  nextMonthBtn.addEventListener("click", () => {
+    if (currentMonth === 11) {
+      currentMonth = 0;
+      currentYear++;
+    } else {
+      currentMonth++;
+    }
+    renderCalendar(currentYear, currentMonth);
+  });
+
+  calendarCancelBtn.addEventListener("click", () => {
+    tempStart = finalStart;
+    tempEnd = finalEnd;
+    closeCalendar();
+  });
+
+  calendarApplyBtn.addEventListener("click", () => {
+    if (!tempStart || !tempEnd) {
+      alert("Please select both a start and an end date.");
+      return;
+    }
+    finalStart = new Date(tempStart);
+    finalEnd = new Date(tempEnd);
+    dateRangeMain.textContent = `${formatDate(finalStart)} → ${formatDate(finalEnd)}`;
+
+    const diffMs = finalEnd - finalStart;
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
+    dateRangeSub.textContent = `${diffDays} day period selected`;
+    closeCalendar();
+  });
+
+  calendarOverlay.addEventListener("click", (e) => {
+    if (e.target === calendarOverlay) {
+      closeCalendar();
+    }
+  });
+
+  renderCalendar(currentYear, currentMonth);
+
+  // -----------------------
+  // ROOMMATES
+  // -----------------------
+  const roommatesGrid = document.getElementById("roommatesGrid");
+  const continueBtn = document.getElementById("continueBtn");
+  let roommateCount = 0; // only used to know how many we've created in total (not for labels)
+
+  // detect if a label is a default one like "Roommate 3"
+  function isDefaultLabel(text) {
+    return /^Roommate\s+\d+$/i.test(text.trim());
+  }
+
+  // renumber ONLY default labels so they become Roommate 1, 2, 3... in order
+  function renumberDefaultRoommates() {
+    const cards = document.querySelectorAll(".roommate-card");
+    let index = 1;
+    cards.forEach(card => {
+      const nameDiv = card.querySelector(".roommate-name");
+      const currentText = nameDiv.textContent.trim();
+      if (isDefaultLabel(currentText)) {
+        nameDiv.textContent = `Roommate ${index}`;
+      }
+      index++;
+    });
+  }
+
+  function createAddCard() {
+    const card = document.createElement("div");
+    card.className = "add-card";
+    card.id = "addCard";
+
+    const plus = document.createElement("div");
+    plus.className = "add-plus";
+    plus.textContent = "＋";
+
+    const text = document.createElement("div");
+    text.className = "add-text";
+    text.textContent = "Add roommate";
+
+    card.appendChild(plus);
+    card.appendChild(text);
+
+    card.addEventListener("click", () => {
+      addRoommate();
+    });
+
+    roommatesGrid.appendChild(card);
+  }
+
+  function addRoommate() {
+    const addCard = document.getElementById("addCard");
+    if (addCard) {
+      roommatesGrid.removeChild(addCard);
+    }
+
+    roommateCount++;
+    const card = document.createElement("div");
+    card.className = "roommate-card";
+
+    const removeBtn = document.createElement("button");
+    removeBtn.textContent = "×";
+    removeBtn.className = "roommate-remove";
+    removeBtn.type = "button";
+    removeBtn.addEventListener("click", () => {
+      card.remove();
+      renumberDefaultRoommates();
+    });
+
+    const nameDiv = document.createElement("div");
+    nameDiv.className = "roommate-name";
+    nameDiv.contentEditable = "true";
+    nameDiv.spellcheck = false;
+    // temporary text; real number will come from renumberDefaultRoommates()
+   const existingCards = document.querySelectorAll(".roommate-card").length;
+nameDiv.textContent = `Roommate ${existingCards + 1}`;
+
+
+    const meta = document.createElement("div");
+    meta.className = "roommate-meta";
+    meta.textContent = "Click to rename";
+
+    card.appendChild(removeBtn);
+    card.appendChild(nameDiv);
+    card.appendChild(meta);
+    roommatesGrid.appendChild(card);
+
+    // Re-add the "add card" at the end
+    createAddCard();
+
+    // Renumber default labels so they become Roommate 1, 2, 3...
+    renumberDefaultRoommates();
+  }
+
+  // initial state: one add card only
+  createAddCard();
+
+ continueBtn.addEventListener("click", () => {
+  const amountStr = document.getElementById("billAmount").value.trim();
+  const amount = parseFloat(amountStr);
+  if (!amountStr || isNaN(amount) || amount <= 0) {
+    alert("Please enter the total bill amount.");
+    return;
+  }
+  if (!finalStart || !finalEnd) {
+    alert("Please select the bill period.");
+    return;
+  }
+
+  const cards = document.querySelectorAll(".roommate-card");
+  if (cards.length === 0) {
+    alert("Please add at least one roommate.");
+    return;
+  }
+
+  const roommateNames = Array.from(cards).map(card =>
+    card.querySelector(".roommate-name").textContent.trim()
+  );
+
+  localStorage.setItem("splitroomBill", amount.toString());
+  localStorage.setItem("splitroomStart", finalStart.toISOString());
+  localStorage.setItem("splitroomEnd", finalEnd.toISOString());
+  localStorage.setItem("splitroomRoommates", JSON.stringify(roommateNames));
+
+  window.location.href = "step2.html";
+});
+
+
+
+</script>
+
+</body>
+</html>

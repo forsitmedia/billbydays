@@ -1,194 +1,200 @@
-<!DOCTYPE html>
-<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>BillbyDays · Fair Roommate Bills</title>
+  <title>Bill by Days · Fair Roommate Bills</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Favicon Base -->
-<link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <!-- Canonical: consolidate homepage on "/" -->
+  <link rel="canonical" href="https://billbydays.com/">
 
-<!-- Standard PNG Icons -->
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
-<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
-<link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+  <!-- Favicons (Google uses PNG/ICO) -->
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=1">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=1">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=1">
 
-<!-- Apple iOS Icon -->
-<link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png">
+  <!-- Apple / iOS icon (you already have favicon-180.png) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png?v=1">
 
-<!-- Android / PWA -->
-<link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512.png">
+  <!-- Android / PWA manifest -->
+  <link rel="manifest" href="/site.webmanifest?v=1">
+  <meta name="theme-color" content="#3b82f6">
 
-<!-- Optional: theme color (browser UI color) -->
-<meta name="theme-color" content="#3b82f6">
-
+  <!-- Fonts (same pattern as your other site, optional but nice) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  
   <style>
-
-    
     :root {
-      --green: #16a34a;
-      --green-soft: #dcfce7;
+      --green: #22c55e;
+      --green-dark: #16a34a;
       --border: #e5e7eb;
+      --bg: #f4f5f7;
       --text-main: #111827;
       --text-muted: #6b7280;
-      --bg: #f9fafb;
       --card-bg: #ffffff;
-      --radius-lg: 18px;
-      --radius-md: 12px;
+      --radius: 20px;
+      --shadow: 0 8px 22px rgba(0,0,0,0.06);
     }
 
     * {
-      box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-        "Segoe UI", sans-serif;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
     }
 
     body {
-      min-height: 100vh;
-      background: var(--bg);
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 32px 16px;
-      color: var(--text-main);
-    }
+  background: var(--bg);
+  /* more top padding so header sits well below Dynamic Island */
+  padding: calc(70px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
+
 
     .app {
       width: 100%;
-      max-width: 900px;
-      background: var(--card-bg);
-      border-radius: 24px;
-      border: 1px solid #e5e7eb;
-      padding: 24px 28px 28px;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      max-width: 520px;
     }
 
-    .title-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.app-logo {
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
-  display: block;
-}
-
-.title-text {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-
     header {
+      margin-bottom: 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
-      gap: 10px;
     }
 
     .title-block {
       display: flex;
       flex-direction: column;
-      gap: 4px;
     }
 
-    .app-title {
-      font-size: 22px;
+    .title {
+      font-size: 28px;
       font-weight: 700;
-      letter-spacing: 0.02em;
-    }
-
-    .app-subtitle {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .step-pill {
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-    }
-
-    /* Top section: bill amount + date range */
-    .top-section {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding: 18px 18px 20px;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
-      background: #ffffff;
-      margin-bottom: 24px;
-    }
-
-    .top-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-
-    .field-group {
-      flex: 1 1 230px;
-      min-width: 0;
-    }
-
-    .field-label {
-      font-size: 12px;
-      font-weight: 500;
-      margin-bottom: 6px;
-    }
-
-    .field-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-
-    .field {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      padding: 10px 14px;
-      background: #f9fafb;
-    }
-
-    .field input {
-      border: none;
-      background: transparent;
-      outline: none;
-      font-size: 14px;
-      width: 100%;
       color: var(--text-main);
     }
 
-    .field input::placeholder {
-      color: #9ca3af;
-    }
-
-    .field-prefix {
+    .subtitle {
       font-size: 14px;
       color: var(--text-muted);
-      padding-right: 6px;
-      border-right: 1px solid #e5e7eb;
     }
 
-    .date-display {
+    /* Free / Pro switch */
+    .mode-switch {
+      background: #eef1f5;
+      padding: 6px 14px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      border: 1px solid #d1d5db;
+      white-space: nowrap;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 22px;
+    }
+
+    .label {
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-main);
+    }
+
+    .sub {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+
+    /* Expense icons */
+    .expense-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+
+
+    /* Total summary row under the expense icons */
+.total-row {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #f3f4f6;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.total-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.total-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.total-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+
+
+    .expense-item {
+      position: relative;   /* add this line */
+      background: #f6f7f9;
+      border: 1px solid #e2e5e9;
+      padding: 10px;
+      border-radius: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .expense-item:hover {
+      transform: translateY(-3px);
+    }
+
+    .exp-icon {
+      font-size: 24px;
+    }
+
+    .exp-name {
+      margin-top: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .exp-amount {
+      font-size: 11px;
+      color: var(--green-dark);
+      font-weight: 600;
+    }
+
+    /* Bill period */
+    .date-box {
+      background: #f3f4f6;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
       gap: 2px;
@@ -196,834 +202,737 @@
     }
 
     .date-main {
-      font-size: 14px;
+      font-size: 15px;
+      color: var(--text-main);
     }
 
     .date-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .date-icon {
-      font-size: 16px;
-      color: var(--text-muted);
-    }
-
-    .top-note {
       font-size: 12px;
       color: var(--text-muted);
     }
 
-    /* Roommates section */
-    .section-heading {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .section-subheading {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 14px;
-    }
-
-    .roommates-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .roommate-card,
-    .add-card {
-      width: 160px;
-      height: 110px;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border);
-      background: #ffffff;
+        /* Per-expense period rows */
+    .per-exp-list {
+      margin-top: 10px;
+      display: none;         /* hidden when 0 or 1 expense */
+      border-top: 1px solid #e5e7eb;
+      padding-top: 10px;
       display: flex;
       flex-direction: column;
+      gap: 6px;
+    }
+
+    .per-exp-row {
+      display: flex;
       align-items: center;
-      justify-content: center;
       gap: 8px;
-    }
-
-    .roommate-card {
-      align-items: stretch;
-      padding: 10px 12px;
-      justify-content: space-between;
-      position: relative;
-    }
-
-    .roommate-name {
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      padding: 6px 8px;
       font-size: 13px;
-      font-weight: 500;
-      background: #f9fafb;
-      cursor: text;
-    }
-
-    .roommate-name[contenteditable="true"]:focus {
-      outline: none;
-      border-color: var(--green);
-      box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.25);
-      background: #ffffff;
-    }
-
-    .roommate-meta {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .roommate-remove {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      border: none;
-      background: transparent;
-      color: #9ca3af;
-      font-size: 16px;
-      cursor: pointer;
-      line-height: 1;
-    }
-
-    .roommate-remove:hover {
       color: #4b5563;
     }
 
-    .add-card {
-      cursor: pointer;
-      border-style: dashed;
-      background: #f9fafb;
-    }
-
-    .add-plus {
-      width: 32px;
-      height: 32px;
+    .per-exp-icon {
+      width: 24px;
+      height: 24px;
       border-radius: 999px;
-      background: var(--green-soft);
+      background: #e5e7eb;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--green);
-      font-size: 22px;
-      font-weight: 500;
-    }
-
-    .add-text {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .footer-actions {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 12px;
-    }
-
-    .continue-btn {
-      border-radius: 999px;
-      padding: 10px 18px;
-      border: none;
-      background: var(--green);
-      color: #ffffff;
-      font-weight: 600;
       font-size: 14px;
-      display: inline-flex;
+    }
+
+    .per-exp-text-main {
+      font-weight: 600;
+    }
+
+    .per-exp-text-sub {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+
+    /* Roommates */
+    .rm-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .rm-card {
+      width: 140px;
+      height: 80px;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      gap: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .add-rm {
+      background: #f3f4f6;
+      border-style: dashed;
+      color: var(--green);
+    }
+
+    .rm-delete {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: #ef4444;
+      color: white;
+      width: 20px;
+      height: 20px;
+      font-size: 13px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       cursor: pointer;
     }
 
-    .continue-btn span {
+    /* Continue button */
+    .btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--green);
+      color: white;
+      border-radius: 14px;
+      text-align: center;
       font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 14px;
+    }
+
+    /* Expense modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+
+    .modal {
+      width: 90%;
+      max-width: 360px;
+      background: white;
+      padding: 20px;
+      border-radius: 18px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .modal-field {
+      margin-bottom: 16px;
+    }
+
+    .modal-field label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .modal-field input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid #d1d5db;
+      margin-top: 6px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .modal-btn {
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+
+    .cancel { background: #e5e7eb; }
+    .save { background: var(--green); color: white; }
+
+    /* Upgrade toast */
+    .upgrade-popup {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 12px;
+      display: none;
+      font-size: 14px;
+      z-index: 3000;
     }
 
     /* Calendar overlay */
     .calendar-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.25);
+      background: rgba(0,0,0,0.35);
       display: none;
       justify-content: center;
       align-items: center;
-      z-index: 1000;
+      z-index: 1500;
     }
 
     .calendar-modal {
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 16px 18px 18px;
-      border: 1px solid #e5e7eb;
-      max-width: 360px;
-      width: 100%;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+      background: white;
+      border-radius: 18px;
+      width: 90%;
+      max-width: 380px;
+      padding: 16px 18px 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.14);
     }
 
     .calendar-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .calendar-title {
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .calendar-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .calendar-month-nav {
-      display: flex;
-      gap: 6px;
+      margin-bottom: 12px;
     }
 
     .icon-btn {
-      width: 26px;
-      height: 26px;
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: #f3f4f6;
       cursor: pointer;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .calendar-day-name {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .calendar-day {
+      text-align: center;
+      padding: 7px 0;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .calendar-day.in-range {
+      background: #dcfce7;
+    }
+    .calendar-day.start,
+    .calendar-day.end {
+      background: var(--green);
+      color: white;
+      font-weight: 600;
+    }
+
+
+
+
+
+    .reset-btn {
+  margin-left: 6px;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  color: #9ca3af;
+}
+.reset-btn:hover {
+  color: #4b5563;
+}
+
+
+
+
+
+.exp-reset {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+
+.title-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+
+
+
+/* ============ PRO MODE THEME ============ */
+
+/* ============ PRO MODE THEME ============ */
+
+body.pro-mode {
+  background: radial-gradient(circle at top, #4f46e5 0, #020617 55%);
+}
+
+/* Cards + general text */
+body.pro-mode .card {
+  background: #020617;
+  border: 1px solid #111827;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+}
+
+body.pro-mode .title {
+  color: #e5e7eb;
+}
+
+body.pro-mode .subtitle {
+  color: #a5b4fc;
+}
+
+body.pro-mode .label {
+  color: #e5e7eb;
+}
+
+body.pro-mode .sub {
+  color: #9ca3af;
+}
+
+/* Inputs & date box */
+body.pro-mode .input-box,
+body.pro-mode .date-box {
+  background: #020617;
+  border-color: #1f2937;
+}
+
+body.pro-mode .input-box span,
+body.pro-mode .input-box input {
+  color: #e5e7eb;
+}
+
+body.pro-mode #dateRangeMain {
+  color: #e5e7eb;
+}
+
+body.pro-mode #dateRangeSub {
+  color: #9ca3af;
+}
+
+/* Placeholders */
+body.pro-mode input::placeholder {
+  color: #6b7280;
+}
+
+/* Expense chips */
+body.pro-mode .expense-item {
+  background: #020617;
+  border-color: #1f2937;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
+
+body.pro-mode .exp-name {
+  color: #e5e7eb;
+}
+
+body.pro-mode .exp-amount {
+  color: #a5b4fc;
+}
+
+/* Little reset "x" in dark mode */
+body.pro-mode .exp-reset {
+  background: #020617;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+/* Roommates */
+body.pro-mode .rm-card {
+  background: #020617;
+  border-color: #1f2937;
+  color: #e5e7eb;
+}
+
+body.pro-mode .add-rm {
+  background: #020617;
+  border-style: dashed;
+  border-color: #4f46e5;
+  color: #a5b4fc;
+}
+
+/* Switch pill */
+body.pro-mode .mode-switch {
+  background: #1e1b4b;
+  border-color: #6366f1;
+  color: #e5e7eb;
+}
+
+body.pro-mode .total-row {
+  background: #020617;
+  border-color: #1f2937;
+}
+
+body.pro-mode .total-label {
+  color: #9ca3af;
+}
+
+body.pro-mode .total-value {
+  color: #e5e7eb;
+}
+
+
+/* Continue button stays bright green → stands out */
+
+
+
+
+
+    .label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .small-link-btn {
+      border: none;
+      background: transparent;
+      font-size: 11px;
+      color: var(--green-dark);
+      padding: 2px 6px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .small-link-btn:hover {
+      background: rgba(34, 197, 94, 0.08);
+    }
+
+    /* Per-expense period rows under Bill period */
+    .per-exp-list {
+      margin-top: 10px;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+      display: none;               /* shown only if 2+ expenses active */
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .per-exp-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #4b5563;
+      cursor: pointer;
+    }
+
+    .per-exp-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: #e5e7eb;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 14px;
     }
 
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-      font-size: 11px;
-      margin-top: 6px;
-    }
-
-    .calendar-day-name {
-      text-align: center;
-      padding: 4px 0;
-      color: var(--text-muted);
-    }
-
-    .calendar-day {
-      text-align: center;
-      padding: 6px 0;
-      border-radius: 999px;
-      cursor: pointer;
-      font-size: 12px;
-      color: var(--text-main);
-    }
-
-    .calendar-day.disabled {
-      opacity: 0.25;
-      cursor: default;
-    }
-
-    .calendar-day.in-range {
-      background: #dcfce7;
-      color: var(--text-main);
-    }
-
-    .calendar-day.start,
-    .calendar-day.end {
-      background: var(--green);
-      color: #ffffff;
+    .per-exp-text-main {
       font-weight: 600;
     }
 
-    .calendar-footer {
-      margin-top: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .per-exp-text-sub {
       font-size: 11px;
-      color: var(--text-muted);
+      color: #9ca3af;
     }
 
-    .calendar-actions {
+    .calendar-copy-main {
+      font-size: 11px;
+      color: #374151;
+      background: #e5e7eb;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin: 8px auto 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .calendar-copy-main:hover {
+      background: #d1d5db;
+    }
+
+
+    .date-row {
+      margin-top: 8px;
       display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 8px;
     }
 
-    .secondary-btn,
-    .primary-btn-small {
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 12px;
-      cursor: pointer;
+    .date-row .date-box {
+      flex: 1;
     }
 
-    .secondary-btn {
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
-      color: var(--text-main);
-    }
 
-    .primary-btn-small {
-      border: none;
-      background: var(--green);
-      color: #ffffff;
-      font-weight: 500;
-    }
+.install-app-btn {
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px 18px;          /* more space inside */
+  box-sizing: border-box;      /* padding counted inside width */
 
-    @media (max-width: 640px) {
-      .app {
-        padding: 18px 16px 20px;
-        border-radius: 18px;
-      }
-      header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .top-section {
-        padding: 14px 14px 16px;
-      }
-    }
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
 
-        .how-section {
-      margin-top: 28px;
-      padding-top: 18px;
-      border-top: 1px solid #e5e7eb;
-    }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: nowrap;
 
-    .how-title {
-      font-size: 18px;
-      font-weight: 650;
-      margin-bottom: 6px;
-    }
+  background: #0f172a;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 15px;
 
-    .how-intro {
-      font-size: 13px;
-      color: var(--text-muted, #6b7280);
-      margin-bottom: 12px;
-    }
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
 
-    .how-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
 
-    .how-card {
-      border-radius: 14px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
-      padding: 10px 12px 12px;
-      font-size: 13px;
-    }
+.install-app-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-    .how-card h3 {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
+.install-app-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-    .how-card p {
-      font-size: 12px;
-      color: #4b5563;
-      line-height: 1.4;
-    }
 
-    .how-step-label {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      background: #dcfce7;
-      color: #166534;
-      margin-bottom: 4px;
-      font-weight: 600;
-    }
 
-    @media (max-width: 768px) {
-      .how-grid {
-        grid-template-columns: 1fr;
-      }
-    }
+.install-section {
+  margin-top: 20px;
+}
+
+.classic-link {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.classic-link a {
+  color: #a5b4fc;
+  text-decoration: underline;
+}
+
+.app-footer {
+  margin-top: 28px;
+  padding: 12px 0 4px;
+  text-align: center;
+  font-size: 11px;
+  color: #6b7280;
+  opacity: 0.7;
+}
 
   </style>
 </head>
+
 <body>
   <div class="app">
- <header>
-  <div class="title-row">
-    <img src="logo.png" alt="App logo" class="app-logo" />
-    <div class="title-text">
-      <div class="app-title">Bill by Days</div>
-      <div class="app-subtitle">Step 1 · Add your bill and roommates</div>
+    <header>
+  <div class="title-left">
+    <img src="logo.png" class="app-logo" alt="Bill by Days logo" />
+    <div class="title-block">
+      <div class="title">Bill by Days</div>
+      <div class="subtitle">Step 1 · Add your bill</div>
     </div>
   </div>
 
-  <div class="step-pill">Electricity · Wi-Fi · Utilities</div>
+  <div id="modeSwitch" class="mode-switch">Free mode</div>
 </header>
 
 
-
-    <!-- TOP: BILL + PERIOD -->
-    <section class="top-section">
-      <div class="top-row">
-        <!-- Bill amount -->
-        <div class="field-group">
-          <div class="field-label">Total bill amount</div>
-          <div class="field-sub">The full amount on your bill.</div>
-          <div class="field">
-            <div class="field-prefix">€</div>
-            <input id="billAmount" type="number" min="0" step="0.01"
-                   placeholder="e.g. 145.56" />
-          </div>
-        </div>
-
-        <!-- Bill period -->
-        <div class="field-group">
-          <div class="field-label">Bill period</div>
-          <div class="field-sub">Select the exact dates on your bill.</div>
-          <div class="field" id="dateRangeField">
-            <div class="date-icon">📅</div>
-            <div class="date-display">
-              <div class="date-main" id="dateRangeMain">
-                Select start & end date
-              </div>
-              <div class="date-sub" id="dateRangeSub">
-                Past dates allowed
-              </div>
-            </div>
-          </div>
-        </div>
+       <!-- TOTAL + EXPENSES -->
+    <section class="card">
+      <div class="label">Total bill amount</div>
+      <div id="totalSub" class="sub">
+        In Free mode you can use only one expense. The total is still calculated from the expenses.
       </div>
 
-      <div class="top-note">
-        Bill will later use this period to count how many days each roommate was at home.
+      <!-- Expense icons first -->
+      <div class="expense-grid" id="expenseGrid"></div>
+
+      <!-- Total row summary -->
+      <div class="total-row">
+        <div class="total-left">
+          <span class="total-label">Total</span>
+        </div>
+        <div class="total-right">
+          <span id="billTotalDisplay" class="total-value">€ 0.00</span>
+          <button id="resetBill" class="reset-btn">×</button>
+        </div>
       </div>
+    </section>
+
+<!-- BILL PERIOD -->
+<section class="card">
+  <div class="label-row">
+    <div class="label">Bill period</div>
+    <button id="applyToAllBtn" class="small-link-btn" style="display:none;">
+      Apply to all
+    </button>
+  </div>
+  <div class="sub">Tap to select start and end dates</div>
+
+  <!-- Row with date box + reset X -->
+  <div class="date-row">
+    <div id="dateRangeField" class="date-box">
+      <div id="dateRangeMain" class="date-main">Select your dates</div>
+      <div id="dateRangeSub" class="date-sub">Past dates allowed</div>
+    </div>
+    <button id="resetDates" class="reset-btn" type="button">×</button>
+  </div>
+
+  <!-- One row per expense with amount (Pro mode) -->
+  <div id="perExpensePeriods" class="per-exp-list"></div>
+</section>
+
+
+
     </section>
 
     <!-- ROOMMATES -->
-    <section>
-      <div class="section-heading">Roommates</div>
-      <div class="section-subheading">
-        Click the square to add a roommate. Then tap the name to rename (e.g. “Luna”).
-      </div>
+    <section class="card">
+      <div class="label">Roommates</div>
+      <div class="sub">Add everyone sharing this bill</div>
 
-      <div class="roommates-grid" id="roommatesGrid">
-        <!-- Add card is injected by JS -->
-      </div>
+      <div id="rmGrid" class="rm-grid"></div>
 
-      <div class="footer-actions">
-        <button class="continue-btn" id="continueBtn" type="button">
-          Continue <span>→</span>
-        </button>
-      </div>
-          <!-- HOW IT WORKS -->
-    <section class="how-section">
-      <h2 class="how-title">How Bill by Days works</h2>
-      <p class="how-intro">
-        We use the bill period and your days at home to share the cost in a fair way for everyone.
-      </p>
-
-      <div class="how-grid">
-        <div class="how-card">
-          <div class="how-step-label">Step 1</div>
-          <h3>Bill & roommates</h3>
-          <p>
-            Enter the total bill amount, select the exact dates on the bill, and add all the roommates
-            who share this bill.
-          </p>
-        </div>
-
-        <div class="how-card">
-          <div class="how-step-label">Step 2</div>
-          <h3>Mark days you were away</h3>
-          <p>
-            For each roommate, mark the days they were <strong>not at home</strong> during the period.
-            Normal click selects a range. <strong>Shift + click</strong> toggles a single day on/off.
-          </p>
-        </div>
-
-        <div class="how-card">
-          <div class="how-step-label">Step 3</div>
-          <h3>We compute the fair share</h3>
-          <p>
-            Each day equals <strong>1 total point</strong>.  
-That point is split only among the roommates who were at home:
-if 1 person is home → they get 1 point;  
-if 4 are home → each gets 0.25;  
-if nobody is home → everyone gets an equal share.
-
-Your cost = <strong>(your points ÷ all points) × bill amount</strong>.
-          </p>
-        </div>
-      </div>
+      <div id="continueBtn" class="btn">Continue →</div>
     </section>
+<div class="install-section">
+  <button id="installAppBtn" class="install-app-btn">
+    <span class="install-app-icon">
+      <img src="/android-chrome-192.png" alt="Bill by Days app icon">
+    </span>
+    <span class="install-app-text">Install Bill by Days</span>
+  </button>
 
-    </section>
-  </div>
+  <p class="classic-link">
+    Curious to see Prototype 0 (built in 24 hours)?<br>
+    <a href="/classic/index.html" target="_blank" rel="noopener">
+      Open the classic version here
+    </a>
+  </p>
+</div>
 
-  <!-- CALENDAR OVERLAY -->
-  <div class="calendar-overlay" id="calendarOverlay">
-    <div class="calendar-modal">
-      <div class="calendar-header">
-        <div>
-          <div class="calendar-title" id="calendarMonthLabel">Month Year</div>
-          <div class="calendar-sub">Click a start date, then an end date.</div>
-        </div>
-        <div class="calendar-month-nav">
-          <button class="icon-btn" id="prevMonthBtn" type="button">‹</button>
-          <button class="icon-btn" id="nextMonthBtn" type="button">›</button>
-        </div>
+<footer class="app-footer">
+  <p>Bill by Days · mobile preview · Made for roommates who enjoy paying fair bills.</p>
+</footer>
+  
+
+  <!-- EXPENSE MODAL (PRO) -->
+  <div id="expModal" class="modal-overlay">
+    <div class="modal">
+      <div id="modalTitle" class="modal-title"></div>
+
+      <div class="modal-field">
+        <label>Total amount (€)</label>
+        <input id="expTotal" type="number" />
       </div>
 
-      <div class="calendar-grid" id="calendarGrid">
-        <!-- Days rendered by JS -->
+      <div class="modal-field">
+        <label>Fixed part (€) · optional</label>
+        <input id="expFixed" type="number" />
       </div>
 
-      <div class="calendar-footer">
-        <div id="selectedRangeHint">No dates selected yet.</div>
-        <div class="calendar-actions">
-          <button class="secondary-btn" type="button" id="calendarCancelBtn">Cancel</button>
-          <button class="primary-btn-small" type="button" id="calendarApplyBtn">Apply</button>
-        </div>
+      <div class="modal-actions">
+        <button id="cancelModal" class="modal-btn cancel">Cancel</button>
+        <button id="saveModal" class="modal-btn save">Save</button>
       </div>
     </div>
   </div>
 
-<script>
-  // -----------------------
-  // DATE RANGE PICKER
-  // -----------------------
-  const dateRangeField = document.getElementById("dateRangeField");
-  const calendarOverlay = document.getElementById("calendarOverlay");
-  const calendarGrid = document.getElementById("calendarGrid");
-  const calendarMonthLabel = document.getElementById("calendarMonthLabel");
-  const prevMonthBtn = document.getElementById("prevMonthBtn");
-  const nextMonthBtn = document.getElementById("nextMonthBtn");
-  const calendarCancelBtn = document.getElementById("calendarCancelBtn");
-  const calendarApplyBtn = document.getElementById("calendarApplyBtn");
-  const selectedRangeHint = document.getElementById("selectedRangeHint");
-  const dateRangeMain = document.getElementById("dateRangeMain");
-  const dateRangeSub = document.getElementById("dateRangeSub");
-
-  let currentMonth = new Date().getMonth();
-  let currentYear = new Date().getFullYear();
-
-  let tempStart = null;
-  let tempEnd = null;
-  let finalStart = null;
-  let finalEnd = null;
-
-  const dayNames = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-
-  function openCalendar() {
-    calendarOverlay.style.display = "flex";
-
-    // Recenter on already selected start date, if any
-    if (finalStart) {
-      currentMonth = finalStart.getMonth();
-      currentYear = finalStart.getFullYear();
-    }
-
-    tempStart = finalStart;
-    tempEnd = finalEnd;
-    renderCalendar(currentYear, currentMonth);
-    updateHint();
-  }
-
-  function closeCalendar() {
-    calendarOverlay.style.display = "none";
-  }
-
-  function formatDate(date) {
-    if (!date) return "";
-    const d = String(date.getDate()).padStart(2, "0");
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const y = date.getFullYear();
-    return `${d}/${m}/${y}`;
-  }
-
-  function dateToKey(date) {
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${date.getFullYear()}-${m}-${d}`;
-  }
-
-  function isSameDay(a, b) {
-    return a && b &&
-      a.getFullYear() === b.getFullYear() &&
-      a.getMonth() === b.getMonth() &&
-      a.getDate() === b.getDate();
-  }
-
-  function isBetween(date, start, end) {
-    if (!start || !end) return false;
-    const t = date.setHours(0,0,0,0);
-    const s = start.setHours(0,0,0,0);
-    const e = end.setHours(0,0,0,0);
-    return t >= s && t <= e;
-  }
-
-  function renderCalendar(year, month) {
-    calendarGrid.innerHTML = "";
-    // Day names
-    dayNames.forEach(name => {
-      const div = document.createElement("div");
-      div.className = "calendar-day-name";
-      div.textContent = name;
-      calendarGrid.appendChild(div);
-    });
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const firstWeekDay = (firstDay.getDay() + 6) % 7; // Monday-based
-
-    calendarMonthLabel.textContent = firstDay.toLocaleString("default", {
-      month: "long",
-      year: "numeric",
-    });
-
-    // Empty cells before first day
-    for (let i = 0; i < firstWeekDay; i++) {
-      const div = document.createElement("div");
-      div.className = "calendar-day disabled";
-      calendarGrid.appendChild(div);
-    }
-
-    for (let d = 1; d <= lastDay.getDate(); d++) {
-      const date = new Date(year, month, d);
-      const div = document.createElement("div");
-      div.className = "calendar-day";
-      div.textContent = d;
-      div.dataset.dateKey = dateToKey(date);
-
-      if (tempStart && isSameDay(date, tempStart)) {
-        div.classList.add("start");
-      }
-      if (tempEnd && isSameDay(date, tempEnd)) {
-        div.classList.add("end");
-      }
-      if (tempStart && tempEnd && isBetween(new Date(date), new Date(tempStart), new Date(tempEnd))) {
-        div.classList.add("in-range");
-      }
-
-      div.addEventListener("click", () => handleDayClick(date));
-      calendarGrid.appendChild(div);
-    }
-  }
-
-  function handleDayClick(date) {
-    if (!tempStart || (tempStart && tempEnd)) {
-      tempStart = new Date(date);
-      tempEnd = null;
-    } else if (!tempEnd) {
-      if (date < tempStart) {
-        tempEnd = tempStart;
-        tempStart = new Date(date);
-      } else {
-        tempEnd = new Date(date);
-      }
-    } else {
-      tempStart = new Date(date);
-      tempEnd = null;
-    }
-    renderCalendar(currentYear, currentMonth);
-    updateHint();
-  }
-
-  function updateHint() {
-    if (tempStart && tempEnd) {
-      selectedRangeHint.textContent =
-        `${formatDate(tempStart)} → ${formatDate(tempEnd)}`;
-    } else if (tempStart) {
-      selectedRangeHint.textContent =
-        `Start: ${formatDate(tempStart)} — now choose an end date`;
-    } else {
-      selectedRangeHint.textContent = "No dates selected yet.";
-    }
-  }
-
-  dateRangeField.addEventListener("click", openCalendar);
-
-  prevMonthBtn.addEventListener("click", () => {
-    if (currentMonth === 0) {
-      currentMonth = 11;
-      currentYear--;
-    } else {
-      currentMonth--;
-    }
-    renderCalendar(currentYear, currentMonth);
-  });
-
-  nextMonthBtn.addEventListener("click", () => {
-    if (currentMonth === 11) {
-      currentMonth = 0;
-      currentYear++;
-    } else {
-      currentMonth++;
-    }
-    renderCalendar(currentYear, currentMonth);
-  });
-
-  calendarCancelBtn.addEventListener("click", () => {
-    tempStart = finalStart;
-    tempEnd = finalEnd;
-    closeCalendar();
-  });
-
-  calendarApplyBtn.addEventListener("click", () => {
-    if (!tempStart || !tempEnd) {
-      alert("Please select both a start and an end date.");
-      return;
-    }
-    finalStart = new Date(tempStart);
-    finalEnd = new Date(tempEnd);
-    dateRangeMain.textContent = `${formatDate(finalStart)} → ${formatDate(finalEnd)}`;
-
-    const diffMs = finalEnd - finalStart;
-    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
-    dateRangeSub.textContent = `${diffDays} day period selected`;
-    closeCalendar();
-  });
-
-  calendarOverlay.addEventListener("click", (e) => {
-    if (e.target === calendarOverlay) {
-      closeCalendar();
-    }
-  });
-
-  renderCalendar(currentYear, currentMonth);
-
-  // -----------------------
-  // ROOMMATES
-  // -----------------------
-  const roommatesGrid = document.getElementById("roommatesGrid");
-  const continueBtn = document.getElementById("continueBtn");
-  let roommateCount = 0; // only used to know how many we've created in total (not for labels)
-
-  // detect if a label is a default one like "Roommate 3"
-  function isDefaultLabel(text) {
-    return /^Roommate\s+\d+$/i.test(text.trim());
-  }
-
-  // renumber ONLY default labels so they become Roommate 1, 2, 3... in order
-  function renumberDefaultRoommates() {
-    const cards = document.querySelectorAll(".roommate-card");
-    let index = 1;
-    cards.forEach(card => {
-      const nameDiv = card.querySelector(".roommate-name");
-      const currentText = nameDiv.textContent.trim();
-      if (isDefaultLabel(currentText)) {
-        nameDiv.textContent = `Roommate ${index}`;
-      }
-      index++;
-    });
-  }
-
-  function createAddCard() {
-    const card = document.createElement("div");
-    card.className = "add-card";
-    card.id = "addCard";
-
-    const plus = document.createElement("div");
-    plus.className = "add-plus";
-    plus.textContent = "＋";
-
-    const text = document.createElement("div");
-    text.className = "add-text";
-    text.textContent = "Add roommate";
-
-    card.appendChild(plus);
-    card.appendChild(text);
-
-    card.addEventListener("click", () => {
-      addRoommate();
-    });
-
-    roommatesGrid.appendChild(card);
-  }
-
-  function addRoommate() {
-    const addCard = document.getElementById("addCard");
-    if (addCard) {
-      roommatesGrid.removeChild(addCard);
-    }
-
-    roommateCount++;
-    const card = document.createElement("div");
-    card.className = "roommate-card";
-
-    const removeBtn = document.createElement("button");
-    removeBtn.textContent = "×";
-    removeBtn.className = "roommate-remove";
-    removeBtn.type = "button";
-    removeBtn.addEventListener("click", () => {
-      card.remove();
-      renumberDefaultRoommates();
-    });
-
-    const nameDiv = document.createElement("div");
-    nameDiv.className = "roommate-name";
-    nameDiv.contentEditable = "true";
-    nameDiv.spellcheck = false;
-    // temporary text; real number will come from renumberDefaultRoommates()
-   const existingCards = document.querySelectorAll(".roommate-card").length;
-nameDiv.textContent = `Roommate ${existingCards + 1}`;
 
 
-    const meta = document.createElement("div");
-    meta.className = "roommate-meta";
-    meta.textContent = "Click to rename";
+  <!-- Calendar overlay -->
+  <!-- Calendar overlay -->
+<div id="calendarOverlay" class="calendar-overlay">
+  <div class="calendar-modal">
+    <div id="calendarCopyMain" class="calendar-copy-main" style="display:none;">
+      ⏱ Copy main period
+    </div>
+    <div class="calendar-header">
+      <div id="calendarMonthLabel">Month Year</div>
+      <div>
+        <button id="prevMonthBtn" class="icon-btn">‹</button>
+        <button id="nextMonthBtn" class="icon-btn">›</button>
+      </div>
+    </div>
+    <div id="calendarGrid" class="calendar-grid"></div>
+  </div>
+</div>
 
-    card.appendChild(removeBtn);
-    card.appendChild(nameDiv);
-    card.appendChild(meta);
-    roommatesGrid.appendChild(card);
+  <!-- Upgrade toast -->
+  <div id="upgradePopup" class="upgrade-popup">This is a Pro feature.</div>
 
-    // Re-add the "add card" at the end
-    createAddCard();
-
-    // Renumber default labels so they become Roommate 1, 2, 3...
-    renumberDefaultRoommates();
-  }
-
-  // initial state: one add card only
-  createAddCard();
-
- continueBtn.addEventListener("click", () => {
-  const amountStr = document.getElementById("billAmount").value.trim();
-  const amount = parseFloat(amountStr);
-  if (!amountStr || isNaN(amount) || amount <= 0) {
-    alert("Please enter the total bill amount.");
-    return;
-  }
-  if (!finalStart || !finalEnd) {
-    alert("Please select the bill period.");
-    return;
-  }
-
-  const cards = document.querySelectorAll(".roommate-card");
-  if (cards.length === 0) {
-    alert("Please add at least one roommate.");
-    return;
-  }
-
-  const roommateNames = Array.from(cards).map(card =>
-    card.querySelector(".roommate-name").textContent.trim()
-  );
-
-  localStorage.setItem("splitroomBill", amount.toString());
-  localStorage.setItem("splitroomStart", finalStart.toISOString());
-  localStorage.setItem("splitroomEnd", finalEnd.toISOString());
-  localStorage.setItem("splitroomRoommates", JSON.stringify(roommateNames));
-
-  window.location.href = "step2.html";
-});
-
-
-
-</script>
-
+  <script src="index.js"></script>
 </body>
 </html>

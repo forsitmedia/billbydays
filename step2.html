@@ -2,837 +2,434 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>BillbyDays · Mark absences</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Favicon Base -->
-<link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <title>Bill by Days · Step 2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-<!-- Standard PNG Icons -->
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
-<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
-<link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+  <!-- Canonical -->
+  <link rel="canonical" href="https://billbydays.com/step2.html">
 
-<!-- Apple iOS Icon -->
-<link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png">
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=1">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=1">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=1">
 
-<!-- Android / PWA -->
-<link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512.png">
+  <!-- Apple -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png?v=1">
 
-<!-- Optional: theme color (browser UI color) -->
-<meta name="theme-color" content="#3b82f6">
+  <!-- PWA -->
+  <link rel="manifest" href="/site.webmanifest?v=1">
+  <meta name="theme-color" content="#3b82f6">
 
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  
   <style>
     :root {
       --green: #16a34a;
       --border: #e5e7eb;
       --text-main: #111827;
       --text-muted: #6b7280;
-      --bg: #f9fafb;
+      --bg: #f8f9fb;
       --card-bg: #ffffff;
-      --radius-lg: 18px;
+      --radius-lg: 22px;
+      --shadow: 0 6px 18px rgba(0,0,0,0.05);
     }
 
     * {
-      box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont,
-        "Segoe UI", sans-serif;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
     }
 
     body {
-      min-height: 100vh;
-      background: var(--bg);
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 32px 16px;
-      color: var(--text-main);
-    }
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+
+  /* 👇 same safe-area padding as Step 1 / Step 3, nicely centered */
+  padding: calc(25px + env(safe-area-inset-top))
+           20px
+           calc(22px + env(safe-area-inset-bottom));
+}
+
+
+
+
 
     .app {
       width: 100%;
-      max-width: 900px;
-      background: var(--card-bg);
-      border-radius: 24px;
-      border: 1px solid #e5e7eb;
-      padding: 24px 28px 28px;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      max-width: 520px;
     }
-    
-    
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 
-.app-logo {
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
-  display: block;
-}
-
-.title-text {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
+    /* HEADER */
 
     header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .title-left {
+      display: flex;
+      align-items: center;
       gap: 10px;
+    }
+
+    .app-logo {
+      width: 42px;
+      height: 42px;
     }
 
     .title-block {
       display: flex;
       flex-direction: column;
-      gap: 4px;
     }
 
     .app-title {
-      font-size: 22px;
+      font-size: 26px;
       font-weight: 700;
-      letter-spacing: 0.02em;
+      margin-bottom: 2px;
+      color: var(--text-main);
     }
 
     .app-subtitle {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--text-muted);
     }
 
-    .step-pill {
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-    }
+    .mode-pill {
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #f3f4f6;
+  color: #374151;
+  white-space: nowrap;
+  cursor: default;   /* NOT clickable on step 2 */
+}
 
-    .big-instruction {
-      font-size: 18px;
-      font-weight: 650;
-      margin-bottom: 14px;
-      color: var(--text-main);
-    }
 
-    .big-instruction span {
-      color: #b91c1c;
-    }
+    /* CARDS */
 
-    .top-section {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding: 18px 18px 16px;
+    .card {
+      background: var(--card-bg);
       border-radius: var(--radius-lg);
+      padding: 20px;
       border: 1px solid var(--border);
-      background: #ffffff;
-      margin-bottom: 18px;
+      margin-bottom: 26px;
+      box-shadow: var(--shadow);
     }
 
-    .top-row {
+    /* SUMMARY CARD */
+
+    .summary-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 10px;
     }
 
-    .metric-card {
-      border-radius: 16px;
-      background: #f9fafb;
-      padding: 10px 14px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .metric-label {
+    .summary-item-label {
       font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .summary-item-value {
+      font-size: 16px;
       font-weight: 600;
-    }
-
-    .metric-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .metric-main {
-      font-size: 20px;
-      font-weight: 700;
-      margin-top: 2px;
-    }
-
-    .field {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      padding: 8px 12px;
-      background: #f9fafb;
-    }
-
-    .field-prefix {
-      font-size: 14px;
-      color: var(--text-muted);
-      padding-right: 6px;
-      border-right: 1px solid #e5e7eb;
-    }
-
-    .field input {
-      border: none;
-      background: transparent;
-      outline: none;
-      font-size: 14px;
       color: var(--text-main);
-      width: 100%;
     }
 
-    .step2-layout {
-      display: flex;
-      gap: 16px;
-      margin-top: 4px;
+    .days-away {
+      margin-top: 8px;
+      font-weight: 600;
+      color: var(--text-main);
+      font-size: 14px;
     }
 
-    .roommate-list {
-      width: 190px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+    /* CURRENT ROOMMATE HEADER */
 
-    .roommate-pill {
-      width: 100%;
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
-      padding: 6px 10px;
-      font-size: 13px;
-      text-align: left;
-      cursor: pointer;
+    .rm-header {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
-    .roommate-pill.active {
-      background: #eef2ff;
-      border-color: #6366f1;
-      font-weight: 500;
-    }
-
-    .color-dot {
-      width: 10px;
-      height: 10px;
+    .rm-dot {
+      width: 16px;
+      height: 16px;
       border-radius: 999px;
       flex-shrink: 0;
     }
 
-    .presence-calendar {
-      flex: 1;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
-      background: #ffffff;
-      padding: 14px 16px 16px;
+    .rm-name {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-main);
     }
 
-    .presence-header {
+    .rm-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* CALENDAR */
+
+    .cal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .calendar-title {
-      font-size: 14px;
+      margin-bottom: 10px;
       font-weight: 600;
+      font-size: 15px;
     }
 
-    .calendar-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .calendar-month-nav {
-      display: flex;
-      gap: 6px;
-    }
-
-    .icon-btn {
-      width: 26px;
-      height: 26px;
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
+    .nav-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
+      color: #4b5563;
     }
 
     .calendar-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-      font-size: 11px;
-      margin-top: 6px;
-    }
-
-    .calendar-day-name {
-      text-align: center;
-      padding: 4px 0;
-      color: var(--text-muted);
-    }
-
-    .calendar-day {
-      text-align: center;
-      padding: 6px 0;
-      border-radius: 999px;
-      cursor: pointer;
-      font-size: 12px;
-      color: var(--text-main);
-      transition: background 0.12s ease, border-color 0.12s ease;
-    }
-
-    .calendar-day.disabled {
-      opacity: 0.25;
-      cursor: default;
-    }
-
-    .calendar-day.anchor {
-      outline: 1px dashed #9ca3af;
-      outline-offset: 1px;
-    }
-
-    .presence-footer {
-      margin-top: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-      color: var(--text-muted);
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .clear-btn {
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      background: #ffffff;
-      font-size: 11px;
-      padding: 5px 10px;
-      cursor: pointer;
-      color: #374151;
-      white-space: nowrap;
-    }
-
-    .clear-btn:hover {
-      background: #f3f4f6;
-    }
-
-    .footer-actions {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 16px;
-      gap: 8px;
-    }
-
-    .secondary-btn,
-    .continue-btn {
-      border-radius: 999px;
-      padding: 9px 16px;
-      font-size: 13px;
-      cursor: pointer;
-    }
-
-    .secondary-btn {
-      border: 1px solid #e5e7eb;
-      background: #ffffff;
-      color: var(--text-main);
-    }
-
-    .continue-btn {
-      border: none;
-      background: var(--green);
-      color: #ffffff;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
       gap: 6px;
+      margin-top: 8px;
     }
 
-    .continue-btn span {
+    .day-label {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .day {
+      text-align: center;
+      padding: 9px 0;
+      border-radius: 10px;
+      background: #f3f4f6;
+      font-size: 15px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.12s ease, transform 0.12s ease;
+    }
+
+    .day:hover {
+      transform: translateY(-1px);
+    }
+
+    .day.selected {
+      color: white;
+      font-weight: 600;
+    }
+
+    .day.start-hint {
+      border: 2px dashed #94a3b8;
+    }
+
+    /* INSTRUCTIONS */
+
+    .instructions {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-top: 14px;
+    }
+
+    /* BUTTONS */
+
+    .footer-buttons {
+      margin-top: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .back-btn {
+      background: #e5e7eb;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 15px;
+      color: #111827;
+    }
+
+    .continue-btn {
+      background: var(--green);
+      border: none;
+      padding: 14px 18px;
+      border-radius: 14px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
       font-size: 15px;
     }
 
-    @media (max-width: 640px) {
-      .app {
-        padding: 18px 16px 20px;
-      }
-      header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .top-row {
-        grid-template-columns: 1fr;
-      }
-      .step2-layout {
-        flex-direction: column;
-      }
-      .roommate-list {
-        width: 100%;
-        flex-direction: row;
-        flex-wrap: wrap;
-      }
-      .roommate-pill {
-        flex: 1 1 140px;
-      }
+    /* =============== PRO THEME (same logic as index + step3) =============== */
+
+    body.pro-mode {
+      background: radial-gradient(circle at top, #4f46e5 0, #020617 55%);
     }
+
+    body.pro-mode .card {
+      background: #020617;
+      border-color: #111827;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+    }
+
+    body.pro-mode .app-title {
+      color: #e5e7eb;
+    }
+
+    body.pro-mode .app-subtitle {
+      color: #a5b4fc;
+    }
+
+    body.pro-mode .summary-item-label,
+    body.pro-mode .days-away,
+    body.pro-mode .rm-sub,
+    body.pro-mode .instructions,
+    body.pro-mode .day-label {
+      color: #9ca3af;
+    }
+
+    body.pro-mode .summary-item-value,
+    body.pro-mode .rm-name,
+    body.pro-mode #monthLabel {
+      color: #e5e7eb;
+    }
+
+    body.pro-mode .day {
+      background: #020617;
+      border: 1px solid #1f2937;
+      color: #e5e7eb;
+    }
+
+    body.pro-mode .day.start-hint {
+      border-color: #4b5563;
+    }
+
+    body.pro-mode .nav-btn {
+      color: #e5e7eb;
+    }
+
+    body.pro-mode .back-btn {
+      background: #111827;
+      color: #e5e7eb;
+    }
+
+    body.pro-mode .continue-btn {
+      background: #16a34a;
+    }
+
+    body.pro-mode .mode-pill {
+      background: #1e1b4b;
+      border-color: #6366f1;
+      color: #e5e7eb;
+    }
+
+    
   </style>
 </head>
+
 <body>
   <div class="app">
- <header>
-  <div class="title-row">
-    <img src="logo.png" alt="App logo" class="app-logo" />
-    <div class="title-text">
-      <div class="app-title">Bill by Days</div>
-      <div class="app-subtitle">Step 2 · Mark days each roommate was away</div>
-    </div>
-  </div>
-
-  <div class="step-pill" id="periodPill">Period</div>
-</header>
-
-
-  
-
-    <section class="top-section">
-      <div class="top-row">
-        <div class="metric-card">
-          <div class="metric-label">Total bill</div>
-          <div class="metric-sub">The amount you're splitting.</div>
-          <div class="field">
-            <div class="field-prefix">€</div>
-            <input id="billInput" type="text" readonly />
-          </div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-label">Overview</div>
-          <div class="metric-main" id="overviewMain">–</div>
-          <div class="metric-sub" id="overviewSub">–</div>
+    <header>
+      <div class="title-left">
+        <img src="logo.png" alt="Bill by Days logo" class="app-logo" />
+        <div class="title-block">
+          <div class="app-title">Bill by Days</div>
+          <div class="app-subtitle">Step 2 · Mark days each roommate was away</div>
         </div>
       </div>
-      <div class="metric-sub" style="margin-top:4px;">
-        Normal click works like page 1: first click = start, second = end of an absence range.  
-        <strong>Shift + click</strong> toggles a single day.  
-        Clicking a highlighted day once clears that whole block and starts a new range from there.
+     <div id="modePill" class="mode-pill">Free mode · tap to simulate Pro</div>
+    
+
+    </header>
+
+    <!-- SUMMARY CARD -->
+    <section class="card">
+      <div class="summary-grid">
+        <div>
+          <div class="summary-item-label">Total bill</div>
+          <div class="summary-item-value" id="sumBill">€ 0</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="summary-item-label">Total days</div>
+          <div class="summary-item-value" id="sumDays">0 days</div>
+        </div>
+        <div>
+          <div class="summary-item-label">Roommates</div>
+          <div class="summary-item-value" id="sumRmCount">0</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="summary-item-label">Overall Period</div>
+          <div class="summary-item-value" id="sumPeriod">-</div>
+        </div>
       </div>
+
+      <div class="days-away" id="daysAwayText">
+        0 days marked as away
+      </div>
+      <div id="proPeriodExplanation" style="
+  margin-top:6px;
+  font-size:12px;
+  color:#6b7280;
+  display:none;
+">
+  We use the overall presence period that covers all your bills.
+  Some bills may only cover part of these dates — that’s handled automatically.
+</div>
+
     </section>
 
-     <h2 class="big-instruction">
-      Mark on the calendar the days you were <span>NOT at home</span>.
-    </h2>
-
-    <section class="step2-layout">
-      <div class="roommate-list" id="roommateList"></div>
-
-      <div class="presence-calendar">
-        <div class="presence-header">
-          <div>
-            <div class="calendar-title" id="monthLabel">Month</div>
-            <div class="calendar-sub" id="activeHint">
-              Click once for start, again for end.
-            </div>
-          </div>
-          <div class="calendar-month-nav">
-            <button class="icon-btn" id="prevMonthBtn" type="button">‹</button>
-            <button class="icon-btn" id="nextMonthBtn" type="button">›</button>
-          </div>
-        </div>
-
-        <div class="calendar-grid" id="calendarGrid"></div>
-
-        <div class="presence-footer">
-          <div id="selectedHint">0 days marked as away</div>
-
-          <button class="clear-btn" type="button" id="clearRoommateBtn">
-            Clear all for this roommate
-          </button>
-
-          <div class="calendar-sub">
-            Normal click = range · Shift + click = single day
+    <!-- CURRENT ROOMMATE + CALENDAR -->
+    <section class="card">
+      <div class="rm-header">
+        <div class="rm-dot" id="rmDot"></div>
+        <div>
+          <div class="rm-name" id="rmName">Roommate</div>
+          <div class="rm-sub" id="rmSub">
+            Mark the days this roommate was not at home.
           </div>
         </div>
       </div>
-    </section>
 
-    <div class="footer-actions">
-      <button class="secondary-btn" type="button" id="backBtn">← Back</button>
-      <button class="continue-btn" type="button" id="continueBtn">
-        Continue <span>→</span>
-      </button>
-    </div>
+      <div class="cal-header">
+        <button class="nav-btn" id="prevMonth">‹</button>
+        <div id="monthLabel"></div>
+        <button class="nav-btn" id="nextMonth">›</button>
+      </div>
+
+      <div id="calendarGrid" class="calendar-grid"></div>
+
+      <div class="instructions">
+        <strong>Tap once</strong> to start a range.<br />
+        <strong>Tap again</strong> to end the range.<br />
+        <strong>Double-tap</strong> a day to toggle it individually.
+      </div>
+
+      <div class="footer-buttons">
+        <button class="back-btn" onclick="window.location.href='index.html'">← Back</button>
+        <button class="continue-btn" id="nextBtn">Next →</button>
+      </div>
+    </section>
   </div>
 
-  <script>
-    // ---- Load data from step 1 ----
-    let roommates = [];
-    let billAmount = 0;
-    let startDate = null;
-    let endDate = null;
-
-    try {
-      billAmount = parseFloat(localStorage.getItem("splitroomBill") || "0");
-      const startISO = localStorage.getItem("splitroomStart");
-      const endISO = localStorage.getItem("splitroomEnd");
-      const rmJSON = localStorage.getItem("splitroomRoommates");
-      if (startISO && endISO) {
-        startDate = new Date(startISO);
-        endDate = new Date(endISO);
-      }
-      roommates = rmJSON ? JSON.parse(rmJSON) : [];
-    } catch (e) {
-      console.error("LocalStorage error", e);
-    }
-
-    // Fallback so page doesn't break if opened alone
-    if (!startDate || !endDate || roommates.length === 0 || !billAmount) {
-      const today = new Date();
-      endDate = new Date(today);
-      startDate = new Date(today);
-      startDate.setDate(startDate.getDate() - 6);
-      roommates = ["Roommate 1", "Roommate 2"];
-      billAmount = 100;
-    }
-
-    startDate.setHours(0,0,0,0);
-    endDate.setHours(0,0,0,0);
-
-    const dayNames = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-
-    function formatDate(date) {
-      const d = String(date.getDate()).padStart(2, "0");
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const y = date.getFullYear();
-      return `${d}/${m}/${y}`;
-    }
-
-    function dateToKey(date) {
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${date.getFullYear()}-${m}-${d}`;
-    }
-
-    const colorPalette = [
-      { bg: "#fee2e2", border: "#ef4444" }, // red
-      { bg: "#dbeafe", border: "#3b82f6" }, // blue
-      { bg: "#fef3c7", border: "#f59e0b" }, // yellow
-      { bg: "#e0f2fe", border: "#0ea5e9" }, // light blue
-      { bg: "#ede9fe", border: "#8b5cf6" }, // violet
-      { bg: "#dcfce7", border: "#22c55e" }, // green
-    ];
-    function colorForIndex(i) {
-      return colorPalette[i % colorPalette.length];
-    }
-
-    // DOM refs
-    const billInput = document.getElementById("billInput");
-    const overviewMain = document.getElementById("overviewMain");
-    const overviewSub = document.getElementById("overviewSub");
-    const periodPill = document.getElementById("periodPill");
-
-    const roommateList = document.getElementById("roommateList");
-    const monthLabel = document.getElementById("monthLabel");
-    const activeHint = document.getElementById("activeHint");
-    const calendarGrid = document.getElementById("calendarGrid");
-    const selectedHint = document.getElementById("selectedHint");
-
-    const prevMonthBtn = document.getElementById("prevMonthBtn");
-    const nextMonthBtn = document.getElementById("nextMonthBtn");
-    const backBtn = document.getElementById("backBtn");
-    const continueBtn = document.getElementById("continueBtn");
-    const clearRoommateBtn = document.getElementById("clearRoommateBtn");
-
-    // Initial info
-    billInput.value = billAmount.toFixed(2);
-    const diffMs = endDate - startDate;
-    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
-    overviewMain.textContent = `${diffDays} day${diffDays === 1 ? "" : "s"}`;
-    overviewSub.textContent =
-      `${roommates.length} roommate${roommates.length === 1 ? "" : "s"}`;
-    periodPill.textContent = `Period · ${formatDate(startDate)} → ${formatDate(endDate)}`;
-
-    // State
-    let activeRoommate = 0;
-    let currentMonth = startDate.getMonth();
-    let currentYear = startDate.getFullYear();
-
-    // For each roommate: Set of away days
-    const absences = roommates.map(() => new Set());
-
-    // Current anchor for range selection
-    let selectionStart = null;
-
-    // ----- Roommate list -----
-    function buildRoommateList() {
-      roommateList.innerHTML = "";
-      roommates.forEach((name, i) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "roommate-pill" + (i === activeRoommate ? " active" : "");
-        const dot = document.createElement("span");
-        dot.className = "color-dot";
-        const col = colorForIndex(i);
-        dot.style.backgroundColor = col.border;
-        btn.appendChild(dot);
-        const label = document.createElement("span");
-        label.textContent = name || `Roommate ${i + 1}`;
-        btn.appendChild(label);
-        btn.addEventListener("click", () => {
-          activeRoommate = i;
-          selectionStart = null;
-          buildRoommateList();
-          renderCalendar(currentYear, currentMonth);
-          updateTexts();
-        });
-        roommateList.appendChild(btn);
-      });
-    }
-
-    // ----- Calendar rendering -----
-    function renderCalendar(year, month) {
-      calendarGrid.innerHTML = "";
-      dayNames.forEach(n => {
-        const div = document.createElement("div");
-        div.className = "calendar-day-name";
-        div.textContent = n;
-        calendarGrid.appendChild(div);
-      });
-
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-      const firstWeekDay = (firstDay.getDay() + 6) % 7; // Monday-based
-
-      monthLabel.textContent = firstDay.toLocaleString("default", {
-        month: "long",
-        year: "numeric",
-      });
-
-      // empty cells
-      for (let i = 0; i < firstWeekDay; i++) {
-        const div = document.createElement("div");
-        div.className = "calendar-day disabled";
-        calendarGrid.appendChild(div);
-      }
-
-      const col = colorForIndex(activeRoommate);
-      const set = absences[activeRoommate];
-
-      for (let d = 1; d <= lastDay.getDate(); d++) {
-        const date = new Date(year, month, d);
-        date.setHours(0,0,0,0);
-        const div = document.createElement("div");
-        div.className = "calendar-day";
-        div.textContent = d;
-
-        const inPeriod = date >= startDate && date <= endDate;
-        if (!inPeriod) {
-          div.classList.add("disabled");
-        } else {
-          const key = dateToKey(date);
-
-          if (set.has(key)) {
-            div.style.backgroundColor = col.bg;
-            div.style.border = `1px solid ${col.border}`;
-          }
-
-          if (selectionStart &&
-              date.getTime() === selectionStart.getTime()) {
-            div.classList.add("anchor");
-          }
-
-          div.addEventListener("click", (e) => handleDayClick(e, new Date(date)));
-        }
-
-        calendarGrid.appendChild(div);
-      }
-    }
-
-    function addRange(start, end) {
-      const set = absences[activeRoommate];
-      let cur = new Date(start);
-      cur.setHours(0,0,0,0);
-      end = new Date(end);
-      end.setHours(0,0,0,0);
-      while (cur <= end) {
-        if (cur >= startDate && cur <= endDate) {
-          set.add(dateToKey(cur));
-        }
-        cur.setDate(cur.getDate() + 1);
-      }
-    }
-
-    function clearBlockAround(date) {
-      const set = absences[activeRoommate];
-      if (set.size === 0) return;
-
-      let start = new Date(date);
-      let end   = new Date(date);
-      start.setHours(0,0,0,0);
-      end.setHours(0,0,0,0);
-
-      // go left
-      while (true) {
-        const prev = new Date(start);
-        prev.setDate(prev.getDate() - 1);
-        if (prev < startDate) break;
-        if (!set.has(dateToKey(prev))) break;
-        start = prev;
-      }
-      // go right
-      while (true) {
-        const next = new Date(end);
-        next.setDate(next.getDate() + 1);
-        if (next > endDate) break;
-        if (!set.has(dateToKey(next))) break;
-        end = next;
-      }
-
-      let cur = new Date(start);
-      cur.setHours(0,0,0,0);
-      const endCopy = new Date(end);
-      endCopy.setHours(0,0,0,0);
-      while (cur <= endCopy) {
-        set.delete(dateToKey(cur));
-        cur.setDate(cur.getDate() + 1);
-      }
-    }
-
-    function handleDayClick(e, date) {
-      date.setHours(0,0,0,0);
-      const set = absences[activeRoommate];
-      const key = dateToKey(date);
-
-      // SHIFT + click = toggle single day
-      if (e.shiftKey) {
-        if (set.has(key)) set.delete(key);
-        else set.add(key);
-        selectionStart = null;
-        renderCalendar(currentYear, currentMonth);
-        updateTexts();
-        return;
-      }
-
-      // Normal click
-      if (!selectionStart) {
-        // First click of a range
-        if (set.has(key)) {
-          // Clicked inside existing block: clear that block and
-          // start a new range from this day
-          clearBlockAround(date);
-        }
-        selectionStart = date;
-        renderCalendar(currentYear, currentMonth);
-        updateTexts();
-      } else {
-        // Second click: finish range
-        const start = selectionStart < date ? selectionStart : date;
-        const end   = selectionStart < date ? date : selectionStart;
-        addRange(start, end);
-        selectionStart = null;
-        renderCalendar(currentYear, currentMonth);
-        updateTexts();
-      }
-    }
-
-    function updateContinueButtonLabel() {
-      if (activeRoommate < roommates.length - 1) {
-        continueBtn.innerHTML = 'Continue <span>→</span>';
-      } else {
-        continueBtn.innerHTML = 'Finish <span>✓</span>';
-      }
-    }
-
-    function updateTexts() {
-      const name = roommates[activeRoommate] || `Roommate ${activeRoommate + 1}`;
-      activeHint.textContent =
-        `Click once for the start, again for the end of ${name}'s absence.`;
-      const count = absences[activeRoommate].size;
-      selectedHint.textContent = `${count} day${count === 1 ? "" : "s"} marked as away`;
-      updateContinueButtonLabel();
-    }
-
-    prevMonthBtn.addEventListener("click", () => {
-      if (currentMonth === 0) {
-        currentMonth = 11;
-        currentYear--;
-      } else {
-        currentMonth--;
-      }
-      renderCalendar(currentYear, currentMonth);
-    });
-
-    nextMonthBtn.addEventListener("click", () => {
-      if (currentMonth === 11) {
-        currentMonth = 0;
-        currentYear++;
-      } else {
-        currentMonth++;
-      }
-      renderCalendar(currentYear, currentMonth);
-    });
-
-    clearRoommateBtn.addEventListener("click", () => {
-      const name = roommates[activeRoommate] || `Roommate ${activeRoommate + 1}`;
-      if (!confirm(`Clear all marked days for ${name}?`)) return;
-      absences[activeRoommate].clear();
-      selectionStart = null;
-      renderCalendar(currentYear, currentMonth);
-      updateTexts();
-    });
-
-    backBtn.addEventListener("click", () => {
-      window.location.href = "index.html";
-    });
-
-  continueBtn.addEventListener("click", () => {
-  if (activeRoommate < roommates.length - 1) {
-    // Next roommate
-    activeRoommate++;
-    selectionStart = null;
-
-    // ⭐ FIX: Reset calendar to bill start month
-    currentMonth = startDate.getMonth();
-    currentYear  = startDate.getFullYear();
-
-    buildRoommateList();
-    renderCalendar(currentYear, currentMonth);
-    updateTexts();
-  } else {
-    // Last roommate → save & go to step 3
-    const serializedAbsences = absences.map(set => Array.from(set));
-    localStorage.setItem("splitroomAbsences", JSON.stringify(serializedAbsences));
-    window.location.href = "step3.html";
-  }
-});
-
-
-    // init
-    buildRoommateList();
-    renderCalendar(currentYear, currentMonth);
-    updateTexts();
-  </script>
+  <script src="step2.js"></script>
 </body>
 </html>

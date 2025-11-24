@@ -798,6 +798,39 @@ body.pro-mode .total-value {
   font-size: 16px;
 }
 
+.install-hint {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  background: #f9fafb;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+.install-hint strong {
+  font-weight: 600;
+}
+
+.share-icon-inline {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+/* Dark / Pro mode: keep it visible */
+body.pro-mode .install-hint {
+  background: #020617;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+body.pro-mode .install-hint strong {
+  color: #e5e7eb;
+}
+
   </style>
 </head>
 
@@ -882,11 +915,14 @@ body.pro-mode .total-value {
     <span class="install-app-text">Install Bill by Days</span>
   </button>
 <p id="installHint" class="install-hint" style="display:none;">
-  On iPhone:
-  <br>1️⃣ Tap the share icon <span aria-hidden="true">▢⬆️</span> at the top or bottom.
-  <br>2️⃣ Tap <strong>More</strong>.
-  <br>3️⃣ Choose <strong>“Add to Home Screen”</strong> (with the <span aria-hidden="true">＋</span> icon).
+  <strong>How to install Bill by Days on iPhone</strong><br>
+  1️⃣ In Safari, tap the <strong>Share</strong> button 
+  <img src="ios-share.png" alt="iPhone share icon" class="share-icon-inline">
+  at the top or bottom of the screen.<br>
+  2️⃣ Scroll down and tap <strong>Add to Home Screen</strong>.<br>
+  3️⃣ Confirm the name <strong>Bill by Days</strong> and tap <strong>Add</strong>.
 </p>
+
 
   <p class="classic-link">
     Curious to see Prototype 0 (built in 24 hours)?<br>

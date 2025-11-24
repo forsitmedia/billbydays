@@ -821,12 +821,43 @@ if (installBtn) {
   });
 }
 
-// Register the service worker
+// 🔄 Ask the service worker to check for updates when the app loads
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("/sw.js")
-      .catch((err) => console.log("SW registration failed:", err));
+      .getRegistration()
+      .then((reg) => {
+        if (reg) {
+          // Already registered → check for a new sw.js
+          reg.update();
+        } else {
+          // No SW yet → register it
+          navigator.serviceWorker.register("/sw.js");
+        }
+      })
+      .catch(() => {
+        // safe to ignore errors here
+      });
   });
 }
+
+
+// 🧠 App version – change this when you ship breaking changes (e.g. Pro becomes paid)
+const APP_VERSION = "1.0.0";
+
+(function checkAppVersion() {
+  const stored = localStorage.getItem("bbd_app_version");
+
+  if (stored !== APP_VERSION) {
+    // 👉 Put here the things that must reset when version changes
+
+    // Example: reset mode so old free-Pro users don't stay unlocked
+    localStorage.removeItem("splitroomMode");
+
+    // You can also clear other old flags if needed:
+    // localStorage.removeItem("someOldFlag");
+
+    localStorage.setItem("bbd_app_version", APP_VERSION);
+  }
+})();
 

@@ -1,4 +1,7 @@
-const CACHE_NAME = "billbydays-v1";
+// 🔁 Bump this when you ship a new build (e.g. when Pro becomes paid)
+const CACHE_VERSION = "v1.0.0";
+const CACHE_NAME = `billbydays-${CACHE_VERSION}`;
+
 const URLS_TO_CACHE = [
   "/",
   "/index.html",
@@ -17,20 +20,33 @@ const URLS_TO_CACHE = [
 // Install: cache core files
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(URLS_TO_CACHE))
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.addAll(URLS_TO_CACHE);
+      // 👉 Tell the new SW to activate as soon as it's ready
+      self.skipWaiting();
+    })()
   );
 });
 
 // Activate: clean old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
+          // Only touch billbydays-* caches
+          if (!key.startsWith("billbydays-")) return null;
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+          return null;
         })
-      )
-    )
+      );
+      // 👉 Take control of all open clients immediately
+      await self.clients.claim();
+    })()
   );
 });
 

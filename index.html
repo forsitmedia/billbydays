@@ -46,7 +46,7 @@
     body {
   background: var(--bg);
   /* more top padding so header sits well below Dynamic Island */
-  padding: calc(70px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  padding: calc(25px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: center;
   min-height: 100vh;
@@ -791,6 +791,13 @@ body.pro-mode .total-value {
   opacity: 0.7;
 }
 
+
+.modal input,
+.modal textarea,
+.modal select {
+  font-size: 16px;
+}
+
   </style>
 </head>
 
@@ -878,7 +885,7 @@ body.pro-mode .total-value {
   <p class="classic-link">
     Curious to see Prototype 0 (built in 24 hours)?<br>
     <a href="/classic/index.html" target="_blank" rel="noopener">
-      Open the classic version here
+      Open the first version here
     </a>
   </p>
 </div>

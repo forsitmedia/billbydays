@@ -768,33 +768,54 @@ continueBtn.onclick = () => {
 
 let deferredPrompt = null;
 const installBtn = document.getElementById("installAppBtn");
+const installHint = document.getElementById("installHint");
 
-// Listen for the Chrome/Android install event
+const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+const isInStandalone =
+  window.matchMedia("(display-mode: standalone)").matches ||
+  window.navigator.standalone === true;
+
+// Chrome / Android: capture the real install prompt
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredPrompt = e;
 
-  // Optional: you can tweak the label when it's “officially” installable
   if (installBtn) {
-    installBtn.textContent = "📲 Install Bill by Days (app)";
+    const textSpan = installBtn.querySelector(".install-app-text");
+    if (textSpan) {
+      textSpan.textContent = "Install Bill by Days (app)";
+    }
   }
 });
 
 if (installBtn) {
   installBtn.addEventListener("click", async () => {
+    // 1) Native prompt available (Chrome/Android)
     if (deferredPrompt) {
-      // Real install prompt (Android / desktop Chrome)
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       deferredPrompt = null;
 
       if (outcome === "accepted") {
-        installBtn.textContent = "✅ App installed";
+        const textSpan = installBtn.querySelector(".install-app-text");
+        if (textSpan) {
+          textSpan.textContent = "App installed ✔";
+        }
       }
-    } else {
-      // Fallback for Safari, unsupported browsers, or when PWA is not fully ready
-      alert(
-        "To install Bill by Days, open this site in your browser menu and choose “Add to Home Screen” (or “Install app” in Chrome)."
+      return;
+    }
+
+    // 2) iOS Safari: show the written instructions instead of an alert
+    if (isIos && !isInStandalone && installHint) {
+      installHint.style.display = "block";
+      installHint.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    // 3) Other browsers: silent fallback
+    if (!isInStandalone) {
+      console.log(
+        "To install, use your browser menu and choose 'Install app' or 'Add to Home Screen'."
       );
     }
   });
@@ -808,3 +829,4 @@ if ("serviceWorker" in navigator) {
       .catch((err) => console.log("SW registration failed:", err));
   });
 }
+

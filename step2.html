@@ -343,6 +343,37 @@
     }
 
     
+.rm-header {
+  position: relative; /* Needed for top-right absolute button */
+}
+
+.reset-days-btn {
+  position: absolute;
+  top: -4px;   /* move up */
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  font-size: 20px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.18);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: background 0.2s ease;
+}
+
+
+.reset-days-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+    
   </style>
 </head>
 
@@ -396,13 +427,17 @@
 </div>
 
     </section>
+    
 
     <!-- CURRENT ROOMMATE + CALENDAR -->
     <section class="card">
       <div class="rm-header">
+        <!-- RESET BUTTON – top right corner -->
+    <button id="resetDaysBtn" class="reset-days-btn">×</button>
         <div class="rm-dot" id="rmDot"></div>
         <div>
-          <div class="rm-name" id="rmName">Roommate</div>
+          <div class="rm-name" id="rmName">Roommate
+          </div>
           <div class="rm-sub" id="rmSub">
             Mark the days this roommate was not at home.
           </div>
@@ -424,7 +459,7 @@
       </div>
 
       <div class="footer-buttons">
-        <button class="back-btn" onclick="window.location.href='index.html'">← Back</button>
+         <button class="back-btn" id="backBtn">← Back</button>
         <button class="continue-btn" id="nextBtn">Next →</button>
       </div>
     </section>

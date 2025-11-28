@@ -331,8 +331,59 @@ nextBtn.onclick = () => {
 
 
 /* ============================================================
+   BACK BUTTON LOGIC (go to previous roommate or Step 1)
+   ============================================================ */
+
+const backBtn = document.getElementById("backBtn");
+
+if (backBtn) {
+  backBtn.onclick = () => {
+    if (rmIndex > 0) {
+      // 👈 Go back to previous roommate
+      rmIndex--;
+      pendingStart = null;
+
+      // Reset calendar view to the start of the selected period
+      currentMonth = start.getMonth();
+      currentYear  = start.getFullYear();
+
+      updateRoommateHeader();
+      renderCalendar(currentYear, currentMonth);
+    } else {
+      // 👈 You were on the first roommate → go back to Step 1
+      window.location.href = "index.html";
+    }
+  };
+}
+
+/* ============================================================
+   RESET DAYS BUTTON (clear all selections for this roommate)
+   ============================================================ */
+
+const resetBtn = document.getElementById("resetDaysBtn");
+
+if (resetBtn) {
+  resetBtn.onclick = () => {
+    const rm = roommates[rmIndex];
+
+    // Clear the Set of selected days for this roommate
+    selections[rm].clear();
+
+    // Reset both month and year views
+    currentMonth = start.getMonth();
+    currentYear = start.getFullYear();
+    pendingStart = null;
+
+    // Re-render UI
+    renderCalendar(currentYear, currentMonth);
+  };
+}
+
+/* ============================================================
    INIT
    ============================================================ */
 
 updateRoommateHeader();
 renderCalendar(currentYear, currentMonth);
+
+

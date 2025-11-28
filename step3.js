@@ -2768,6 +2768,111 @@ if (openTipsBtn && tipsOverlay && tipsCloseBtn) {
   });
 }
 
+/* ========= FEEDBACK OVERLAY (FREE + PRO) ========= */
+
+const feedbackOverlay = document.getElementById("feedbackOverlay");
+const feedbackOpenBtn = document.getElementById("openFeedbackBtn");
+const feedbackCloseBtn = document.getElementById("feedbackCloseBtn");
+const feedbackStars = document.querySelectorAll("#feedbackStars span");
+const feedbackMessage = document.getElementById("feedbackMessage");
+const feedbackEmail = document.getElementById("feedbackEmail");
+const feedbackStatus = document.getElementById("feedbackStatus");
+
+let feedbackRating = 0;
+
+if (feedbackOverlay && feedbackOpenBtn && feedbackCloseBtn) {
+  // Open / close
+  feedbackOpenBtn.addEventListener("click", () => {
+    feedbackOverlay.style.display = "flex";
+  });
+
+  feedbackCloseBtn.addEventListener("click", () => {
+    feedbackOverlay.style.display = "none";
+  });
+
+  feedbackOverlay.addEventListener("click", (e) => {
+    if (e.target === feedbackOverlay) {
+      feedbackOverlay.style.display = "none";
+    }
+  });
+
+  // Star selection
+  feedbackStars.forEach((star) => {
+    star.addEventListener("click", () => {
+      feedbackRating = Number(star.dataset.star);
+      feedbackStars.forEach((s) => {
+        const n = Number(s.dataset.star);
+        s.textContent = n <= feedbackRating ? "⭐" : "☆";
+      });
+    });
+  });
+}
+
+/* ========= SUPABASE FEEDBACK SAVE ========= */
+
+// 1) Your own values from Supabase → Settings → API
+const SUPABASE_URL = "https://vzxnkgpdzpupgvjifvdg.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6eG5rZ3BkenB1cGd2amlmdmRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNjg0MTMsImV4cCI6MjA3OTg0NDQxM30.u1GXj7vjk5_v3r8yWT1tX07YGyPuyiGP_v9YI0CQA0M";
+
+// 2) Create client using global supabase (from UMD script in step3.html)
+let sbClient = null;
+if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY) {
+  sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+const sendFeedbackBtn = document.getElementById("sendFeedbackBtn");
+
+if (sendFeedbackBtn && sbClient) {
+  sendFeedbackBtn.addEventListener("click", async () => {
+    // Don’t send empty feedback
+    if (!feedbackMessage.value.trim() && feedbackRating === 0) {
+      feedbackStatus.style.color = "#b91c1c";
+      feedbackStatus.textContent =
+        "Please leave at least a rating or a short message 🙏";
+      return;
+    }
+
+    feedbackStatus.style.color = "#6b7280";
+    feedbackStatus.textContent = "Sending...";
+
+    try {
+      const { error } = await sbClient.from("feedback").insert([
+        {
+          rating: feedbackRating || null,
+          message: feedbackMessage.value.trim() || null,
+          email: feedbackEmail.value.trim() || null,
+          page: "step3",
+        },
+      ]);
+
+      if (error) {
+        console.error(error);
+        feedbackStatus.style.color = "#b91c1c";
+        feedbackStatus.textContent =
+          "Something went wrong. Please try again 😔";
+        return;
+      }
+
+      feedbackStatus.style.color = "#16a34a";
+      feedbackStatus.textContent =
+        "Thank you! Your feedback helps a lot 💛";
+
+      // Reset fields
+      feedbackMessage.value = "";
+      feedbackEmail.value = "";
+      feedbackRating = 0;
+      feedbackStars.forEach((s) => (s.textContent = "☆"));
+    } catch (err) {
+      console.error(err);
+      feedbackStatus.style.color = "#b91c1c";
+      feedbackStatus.textContent =
+        "Network error. Please try again later 😔";
+    }
+  });
+}
+
+
+
 /* ========= SHARE WITH FRIENDS (DOWNLOAD PDF) ========= */
 
 const shareFriendsBtn = document.getElementById("shareFriendsBtn");

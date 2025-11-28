@@ -1939,6 +1939,11 @@ body.pro-mode .calc-step-text strong {
 
           <button class="pill-btn" id="shareFriendsBtn">Share with Roomates 📤</button>
 
+           <button class="pill-btn" id="openFeedbackBtn"
+    style="background:#fef3c7;border-color:#facc15;color:#92400e;">
+    ⭐ Leave feedback
+  </button>
+
       </div>
 
       <!-- Stats card -->
@@ -2109,6 +2114,53 @@ body.pro-mode .calc-step-text strong {
           “heating wars.”
         </p>
       </div>
+
+        <!-- FEEDBACK OVERLAY -->
+  <div id="feedbackOverlay" class="calc-overlay">
+    <div class="calc-modal">
+      <div class="calc-header">
+        <div class="calc-title">Your feedback is essential 💛</div>
+        <button id="feedbackCloseBtn" class="calc-close">✕</button>
+      </div>
+
+      <div class="calc-body">
+        <p class="calc-step-text" style="margin-bottom:10px;">
+          Bill by Days is only a few days old. Your feedback helps decide if this
+          thing has a future – good or bad, everything is gold.
+        </p>
+
+        <!-- Stars -->
+        <div id="feedbackStars"
+          style="display:flex;gap:6px;font-size:24px;margin-bottom:10px;cursor:pointer;">
+          <span data-star="1">☆</span>
+          <span data-star="2">☆</span>
+          <span data-star="3">☆</span>
+          <span data-star="4">☆</span>
+          <span data-star="5">☆</span>
+        </div>
+
+        <!-- Message -->
+        <textarea id="feedbackMessage"
+          placeholder="Tell me what worked, what didn’t, or any ideas you have..."
+          style="width:100%;height:90px;padding:10px;border-radius:12px;border:1px solid #e5e7eb;margin-bottom:10px;font-size:13px;"></textarea>
+
+        <!-- Optional contact -->
+        <input id="feedbackEmail" type="text"
+          placeholder="Email or Instagram (optional)"
+          style="width:100%;padding:10px;border-radius:12px;border:1px solid #e5e7eb;margin-bottom:12px;font-size:13px;">
+
+        <button id="sendFeedbackBtn"
+          class="primary-btn"
+          style="width:100%;border-radius:999px;background:#facc15;color:#111827;">
+          Send feedback
+        </button>
+
+        <p id="feedbackStatus" style="font-size:12px;margin-top:8px;"></p>
+      </div>
+    </div>
+  </div>
+
+
 
       <div class="step-block" style="margin-top: 12px;">
         <div class="step-label">📚 Sources</div>
@@ -2300,6 +2352,9 @@ body.pro-mode .calc-step-text strong {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
 
 <script src="step3.js"></script>
 </body>

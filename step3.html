@@ -1868,6 +1868,17 @@ body.pro-mode .calc-step-text strong {
   color: #ffffff;
 }
 
+#calendarOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2100;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
 
   </style>
 </head>
@@ -2179,7 +2190,7 @@ body.pro-mode .calc-step-text strong {
       </div>
     </div>
   </div>
-  
+
    <!-- REPORT OVERLAY (PRO ONLY) -->
 <div id="reportOverlay" class="report-overlay">
   <div class="report-shell" id="reportShell">

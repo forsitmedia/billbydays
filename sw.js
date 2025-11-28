@@ -1,8 +1,9 @@
-// 🔁 Bump this when you ship a new build (e.g. when Pro becomes paid)
-const CACHE_VERSION = "v1.0.4";
-const CACHE_NAME = `billbydays-${CACHE_VERSION}`;
+// 🧠 BillByDays service worker
+// Goal: PWA install + offline support + automatic fresh updates
+// → Network-first, cache as fallback. No manual version bump needed.
 
-const URLS_TO_CACHE = [
+const CACHE_NAME = "billbydays-app-v1";
+const CORE_URLS = [
   "/",
   "/index.html",
   "/step2.html",
@@ -14,47 +15,73 @@ const URLS_TO_CACHE = [
   "/favicon-48.png",
   "/favicon-180.png",
   "/android-chrome-192.png",
-  "/android-chrome-512.png"
+  "/android-chrome-512.png",
 ];
 
-// Install: cache core files
+// INSTALL: precache core files so the app works offline after first load
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
-      await cache.addAll(URLS_TO_CACHE);
-      // 👉 Tell the new SW to activate as soon as it's ready
+      await cache.addAll(CORE_URLS);
+      // Activate this service worker immediately
       self.skipWaiting();
     })()
   );
 });
 
-// Activate: clean old caches
+// ACTIVATE: delete old BillByDays caches and take control
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
       await Promise.all(
         keys.map((key) => {
-          // Only touch billbydays-* caches
-          if (!key.startsWith("billbydays-")) return null;
-          if (key !== CACHE_NAME) {
+          // Delete any old billbydays-* caches
+          if (key.startsWith("billbydays-") && key !== CACHE_NAME) {
             return caches.delete(key);
           }
-          return null;
         })
       );
-      // 👉 Take control of all open clients immediately
+      // Make this SW control all existing tabs immediately
       await self.clients.claim();
     })()
   );
 });
 
-// Fetch: serve from cache, fallback to network
+// FETCH: network-first, fallback to cache for offline use
 self.addEventListener("fetch", (event) => {
+  // Only handle GET requests
+  if (event.request.method !== "GET") return;
+
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
+    (async () => {
+      try {
+        // 👉 Try the network first, forcing a fresh fetch
+        const freshResponse = await fetch(
+          new Request(event.request, { cache: "no-store" })
+        );
+
+        // Save a copy in cache for offline
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(event.request, freshResponse.clone());
+
+        // Return the fresh response to the page
+        return freshResponse;
+      } catch (err) {
+        // ❌ Network failed (offline) → try cache
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+
+        // If it's a navigation request and we have index.html cached, use it
+        if (event.request.mode === "navigate") {
+          const fallback = await caches.match("/");
+          if (fallback) return fallback;
+        }
+
+        // Last resort: throw error
+        throw err;
+      }
+    })()
   );
 });

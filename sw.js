@@ -1,5 +1,5 @@
 // 🔁 Bump this when you ship a new build (e.g. when Pro becomes paid)
-const CACHE_VERSION = "v1.0.1";
+const CACHE_VERSION = "v1.0.3";
 const CACHE_NAME = `billbydays-${CACHE_VERSION}`;
 
 const URLS_TO_CACHE = [

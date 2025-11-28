@@ -1868,6 +1868,31 @@ body.pro-mode .calc-step-text strong {
   color: #ffffff;
 }
 
+
+
+  #feedbackOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999; /* <-- THE IMPORTANT FIX */
+  }
+
+  .feedback-modal {
+    background: #111827;
+    padding: 20px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+  }
+</style>
+
+
   </style>
 </head>
 

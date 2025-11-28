@@ -2810,11 +2810,9 @@ if (feedbackOverlay && feedbackOpenBtn && feedbackCloseBtn) {
 
 /* ========= SUPABASE FEEDBACK SAVE ========= */
 
-// 1) Your own values from Supabase → Settings → API
 const SUPABASE_URL = "https://vzxnkgpdzpupgvjifvdg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6eG5rZ3BkenB1cGd2amlmdmRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNjg0MTMsImV4cCI6MjA3OTg0NDQxM30.u1GXj7vjk5_v3r8yWT1tX07YGyPuyiGP_v9YI0CQA0M";
 
-// 2) Create client using global supabase (from UMD script in step3.html)
 let sbClient = null;
 if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY) {
   sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -2824,7 +2822,6 @@ const sendFeedbackBtn = document.getElementById("sendFeedbackBtn");
 
 if (sendFeedbackBtn && sbClient) {
   sendFeedbackBtn.addEventListener("click", async () => {
-    // Don’t send empty feedback
     if (!feedbackMessage.value.trim() && feedbackRating === 0) {
       feedbackStatus.style.color = "#b91c1c";
       feedbackStatus.textContent =
@@ -2857,7 +2854,6 @@ if (sendFeedbackBtn && sbClient) {
       feedbackStatus.textContent =
         "Thank you! Your feedback helps a lot 💛";
 
-      // Reset fields
       feedbackMessage.value = "";
       feedbackEmail.value = "";
       feedbackRating = 0;
@@ -2870,6 +2866,7 @@ if (sendFeedbackBtn && sbClient) {
     }
   });
 }
+
 
 
 
@@ -2937,4 +2934,6 @@ document.getElementById("restartBtn").addEventListener("click", () => {
     window.location.href = "index.html";
   }
 });
+
+
 

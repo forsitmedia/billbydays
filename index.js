@@ -821,25 +821,6 @@ if (installBtn) {
   });
 }
 
-// 🔄 Ask the service worker to check for updates when the app loads
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .getRegistration()
-      .then((reg) => {
-        if (reg) {
-          // Already registered → check for a new sw.js
-          reg.update();
-        } else {
-          // No SW yet → register it
-          navigator.serviceWorker.register("/sw.js");
-        }
-      })
-      .catch(() => {
-        // safe to ignore errors here
-      });
-  });
-}
 
 
 // 🧠 App version – change this when you ship breaking changes (e.g. Pro becomes paid)

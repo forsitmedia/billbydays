@@ -777,11 +777,7 @@ const isInStandalone =
   window.matchMedia("(display-mode: standalone)").matches ||
   window.navigator.standalone === true;
 
-  // Hide Install button if app is already installed (iOS + Android + Desktop)
-if (window.matchMedia('(display-mode: standalone)').matches) {
-  const btn = document.getElementById("installAppBtn");
-  if (btn) btn.style.display = "none";
-}
+ 
 
 // Hide right after installation (Android + Desktop)
 window.addEventListener('appinstalled', () => {

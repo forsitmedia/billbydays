@@ -1,6 +1,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>Bill by Days · Fair Roommate Bills</title>
+  <meta name="description" content="Split utility bills like electricity, water and gas consumption fairly, based on each roommate’s presence days. Simple, accurate, transparent bill splitting for shared homes.
+  You were not at home, then you shouldn 't pay for that day." />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Canonical: consolidate homepage on "/" -->
@@ -831,6 +834,7 @@ body.pro-mode .install-hint strong {
   color: #e5e7eb;
 }
 
+
   </style>
 </head>
 
@@ -851,7 +855,7 @@ body.pro-mode .install-hint strong {
 
        <!-- TOTAL + EXPENSES -->
     <section class="card">
-      <div class="label">Total bill amount</div>
+      <div class="label">Digit the Total Bill Amount</div>
       <div id="totalSub" class="sub">
         In Free mode you can use only one expense. The total is still calculated from the expenses.
       </div>
@@ -874,12 +878,12 @@ body.pro-mode .install-hint strong {
 <!-- BILL PERIOD -->
 <section class="card">
   <div class="label-row">
-    <div class="label">Bill period</div>
+    <div class="label">Insert the Bill Period</div>
     <button id="applyToAllBtn" class="small-link-btn" style="display:none;">
       Apply to all
     </button>
   </div>
-  <div class="sub">Tap to select start and end dates</div>
+  <div class="sub">Tap to select start and end dates. </div>
 
   <!-- Row with date box + reset X -->
   <div class="date-row">
@@ -900,8 +904,8 @@ body.pro-mode .install-hint strong {
 
     <!-- ROOMMATES -->
     <section class="card">
-      <div class="label">Roommates</div>
-      <div class="sub">Add everyone sharing this bill</div>
+      <div class="label">Add the total Roommates</div>
+      <div class="sub">Add everyone sharing this bill (including you)</div>
 
       <div id="rmGrid" class="rm-grid"></div>
 

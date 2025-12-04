@@ -40,6 +40,8 @@ const prevMonthBtn = document.getElementById("prevMonthBtn");
 const nextMonthBtn = document.getElementById("nextMonthBtn");
 const calendarCopyMain = document.getElementById("calendarCopyMain");
 
+
+
 /* STATE */
 
 // Expenses for Pro mode
@@ -774,6 +776,19 @@ const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
 const isInStandalone =
   window.matchMedia("(display-mode: standalone)").matches ||
   window.navigator.standalone === true;
+
+  // Hide Install button if app is already installed (iOS + Android + Desktop)
+if (window.matchMedia('(display-mode: standalone)').matches) {
+  const btn = document.getElementById("installAppBtn");
+  if (btn) btn.style.display = "none";
+}
+
+// Hide right after installation (Android + Desktop)
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById("installAppBtn");
+  if (btn) btn.style.display = "none";
+});
+
 
 // Chrome / Android: capture the real install prompt
 window.addEventListener("beforeinstallprompt", (e) => {

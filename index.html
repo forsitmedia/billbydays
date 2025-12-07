@@ -860,16 +860,18 @@ body.pro-mode .install-hint strong {
       background: #e5e7eb;
     }
 
-    /* Help overlay */
     .help-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.45);
-      display: none;               /* hidden by default */
-      justify-content: center;
-      align-items: center;
-      z-index: 2100;               /* above the expense modal */
-    }
+  position: fixed;
+  inset: 0;
+  /* semi-transparent dark + blur */
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(6px);      /* <- this makes it blurred */
+  display: none;                   /* stays hidden by default */
+  justify-content: center;
+  align-items: center;
+  z-index: 2100;
+}
+
 
     .help-modal {
       background: #ffffff;
@@ -1089,6 +1091,10 @@ body.pro-mode .install-hint strong {
             src="image index/home data.jpg"
             alt="Example bill with billing period and total highlighted"
           />
+          <p>
+            In this case, the bill period is from <strong>27/08/2025 to 26/06/2025</strong> and the total amount to input would be <strong>€ 129.86</strong>.
+          </p>
+          <br>
         </div>
 
         <!-- STEP 2 -->
@@ -1098,12 +1104,20 @@ body.pro-mode .install-hint strong {
             The yellow boxes show the <strong>variable part</strong> (what changes
             with how much you use – kWh, m³, etc.).  
             The red area at the bottom shows the <strong>fixed part</strong>
-            (taxes, fees and CAV in this example).
+            (what stays the same independently of your consumption like taxes, fees and CAV in this example).
           </p>
           <img
             src="image index/back page data.jpg"
             alt="Example bill with fixed and variable parts highlighted"
           />
+          <p>
+            In this case, the important parts to input and remember are:
+            The total bill amount: <strong>€ 129.86</strong> <br>
+            and the fixed part (1)+(2)+(3): <strong>€ 38.01</strong>.
+            <br>
+            The variable part will be automatically calculated by Bill by Days once you input these two numbers. 
+            in this case it would be <strong>€ 91.85</strong>, the yellow area.
+          </p>
         </div>
 
         <p class="help-footnote">

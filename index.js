@@ -424,6 +424,39 @@ resetBill.onclick = () => {
   updateTotalBillFromExpenses();
 };
 
+// ===== BILL HELP OVERLAY =====
+
+const billHelpBtn      = document.getElementById("billHelpBtn");
+const billHelpOverlay  = document.getElementById("billHelpOverlay");
+const closeBillHelp    = document.getElementById("closeBillHelp");
+const billHelpTitle    = document.getElementById("billHelpTitle");
+const billHelpTypeSpan = document.getElementById("billHelpType");
+
+if (billHelpBtn && billHelpOverlay && closeBillHelp) {
+  billHelpBtn.onclick = () => {
+    if (!editingExpense) return;
+
+    // adapt text to the selected emoji (Electricity, Water, Gas, Other)
+    const type = (editingExpense.name || "bill").toLowerCase();
+    billHelpTypeSpan.textContent = type;
+    billHelpTitle.textContent = `How to read your ${type} bill`;
+
+    billHelpOverlay.style.display = "flex";
+  };
+
+  closeBillHelp.onclick = () => {
+    billHelpOverlay.style.display = "none";
+  };
+
+  // click outside the card to close
+  billHelpOverlay.onclick = (event) => {
+    if (event.target === billHelpOverlay) {
+      billHelpOverlay.style.display = "none";
+    }
+  };
+}
+
+
 
 
 /* ======================

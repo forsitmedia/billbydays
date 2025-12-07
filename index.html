@@ -834,6 +834,100 @@ body.pro-mode .install-hint strong {
   color: #e5e7eb;
 }
 
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .modal-help-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #f3f4f6;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #4b5563;
+    }
+
+    .modal-help-btn:hover {
+      background: #e5e7eb;
+    }
+
+    /* Help overlay */
+    .help-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;               /* hidden by default */
+      justify-content: center;
+      align-items: center;
+      z-index: 2100;               /* above the expense modal */
+    }
+
+    .help-modal {
+      background: #ffffff;
+      border-radius: 18px;
+      width: 92%;
+      max-width: 420px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      box-shadow: 0 22px 44px rgba(0, 0, 0, 0.18);
+      padding: 16px 18px 18px;
+    }
+
+    .help-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .help-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .help-body {
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .help-intro {
+      margin-bottom: 10px;
+    }
+
+    .help-step h4 {
+      font-size: 14px;
+      margin: 10px 0 4px;
+      font-weight: 600;
+    }
+
+    .help-step p {
+      margin: 0 0 6px;
+      line-height: 1.4;
+    }
+
+    .help-body img {
+      width: 100%;
+      border-radius: 12px;
+      margin: 6px 0 14px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .help-footnote {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
 
   </style>
 </head>
@@ -942,9 +1036,13 @@ body.pro-mode .install-hint strong {
   
 
   <!-- EXPENSE MODAL (PRO) -->
-  <div id="expModal" class="modal-overlay">
-    <div class="modal">
+<div id="expModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
       <div id="modalTitle" class="modal-title"></div>
+      <button id="billHelpBtn" type="button" class="modal-help-btn">?</button>
+    </div>
+
 
       <div class="modal-field">
         <label>Total amount (€)</label>
@@ -963,6 +1061,60 @@ body.pro-mode .install-hint strong {
     </div>
   </div>
 
+  <!-- BILL HELP OVERLAY -->
+  <div id="billHelpOverlay" class="help-overlay">
+    <div class="help-modal">
+      <div class="help-header">
+        <div id="billHelpTitle" class="help-title">
+          How to read your electricity bill
+        </div>
+        <button id="closeBillHelp" class="icon-btn" type="button">×</button>
+      </div>
+
+      <div class="help-body">
+        <p class="help-intro">
+          Use this quick guide to find the <strong>total amount</strong> and the optional
+          <strong>fixed part</strong> on your <span id="billHelpType">electricity</span> bill.
+        </p>
+
+        <!-- STEP 1 -->
+        <div class="help-step">
+          <h4>1. Check the bill period and the total</h4>
+          <p>
+            The green bar shows the <strong>bill period</strong>
+            and the green circle shows the <strong>total to pay</strong> for this bill.
+            That’s the number you put in <strong>“Total amount (€)”</strong>.
+          </p>
+          <img
+            src="image index/home data.jpg"
+            alt="Example bill with billing period and total highlighted"
+          />
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="help-step">
+          <h4>2. Separate variable vs fixed part</h4>
+          <p>
+            The yellow boxes show the <strong>variable part</strong> (what changes
+            with how much you use – kWh, m³, etc.).  
+            The red area at the bottom shows the <strong>fixed part</strong>
+            (taxes, fees and CAV in this example).
+          </p>
+          <img
+            src="image index/back page data.jpg"
+            alt="Example bill with fixed and variable parts highlighted"
+          />
+        </div>
+
+        <p class="help-footnote">
+          In Bill by Days you can type the full <strong>Total amount (€)</strong>, and – if you want –
+          the <strong>Fixed part (€)</strong>. We automatically split the variable part
+          across days and roommates for you.
+        </p>
+      </div>
+    </div>
+  </div>
+  <!-- END BILL HELP OVERLAY -->
 
 
   <!-- Calendar overlay -->

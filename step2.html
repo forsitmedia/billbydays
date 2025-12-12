@@ -386,7 +386,7 @@
   border: none;
   border-radius: 20%;
   cursor: pointer;
-  color: #e2e8f0; /* light gray */
+  color: #494e56; /* light gray */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -399,7 +399,13 @@
   background: rgba(255, 255, 255, 0.28);
 }
 
-    
+#daysAwayText{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 10px;
+}
+
   </style>
 </head>
 
@@ -465,12 +471,12 @@
           <div class="rm-sub" id="rmSub">
             Mark the days this roommate was not at home.
           </div>
-          <div class="days-away" id="daysAwayText">
-  0 days marked as away
-</div>
-
         </div>
       </div>
+
+      <div class="days-away" id="daysAwayText">
+  0 days marked as away
+</div>
 
       <div class="cal-header">
         <button class="nav-btn" id="prevMonth">‹</button>

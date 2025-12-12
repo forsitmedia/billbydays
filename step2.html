@@ -149,17 +149,12 @@
 
     /* Days-away badge (now inside the calendar card) */
 .days-away {
-  /* spacing */
-  margin-top: 10px;       /* ↓ more space from "Mark the days..." */
-  margin-bottom: 10px;    /* ↑ space before the calendar */
-
-  /* positioning */
-  align-self: center;    /* centers it within the header column */
-  transform: translateX(35px); /* nudges it slightly to the right */
+  margin-top: 0;
+  margin-bottom: 0;
 
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
 
   padding: 6px 12px;
   border-radius: 999px;
@@ -167,23 +162,21 @@
   font-weight: 600;
   font-size: 13px;
 
-  /* low visibility by default */
   opacity: 0.25;
 
-  /* uses roommate color via CSS variable */
   color: var(--rm-color, var(--text-main));
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
 
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 .days-away.active {
   opacity: 1;
-  transform: translateX(29px) translateY(-1px);
   border-color: color-mix(in srgb, var(--rm-color, #fff) 45%, transparent);
   background: color-mix(in srgb, var(--rm-color, #fff) 14%, transparent);
 }
+
 
 
 

@@ -100,8 +100,15 @@ const dayNames = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 function updateRoommateHeader() {
   const rm = roommates[rmIndex];
   rmNameEl.textContent = rm;
-  rmSubEl.textContent = `Mark the days ${rm} was not at home.`;
+
+  const isMe = (rm || "").trim().toLowerCase() === "me";
+  rmSubEl.textContent = isMe
+    ? "Mark the days you were not at home."
+    : `Mark the days ${rm} was not at home.`;
   rmDot.style.background = colors[rmIndex % colors.length];
+  const c = colors[rmIndex % colors.length];
+daysAwayText.style.setProperty("--rm-color", c);
+
 
   nextBtn.textContent =
     rmIndex === roommates.length - 1 ? "Continue →" : "Next →";
@@ -259,9 +266,20 @@ function isSameDate(a, b) {
 function updateSummaryCount() {
   const rm = roommates[rmIndex];
   const count = selections[rm].size;
-  daysAwayText.textContent = `${count} day${
-    count !== 1 ? "s" : ""
-  } marked as away for ${rm}`;
+
+  const isMe = (rm || "").trim().toLowerCase() === "me";
+  const label = isMe ? "you" : rm;
+
+  if (count > 0) {
+    daysAwayText.textContent = `${count} day${count !== 1 ? "s" : ""} marked as away for ${label}`;
+    daysAwayText.classList.add("active");
+  } else {
+    // subtle / low visibility state
+    daysAwayText.textContent = isMe
+      ? "No days marked as away yet"
+      : `No days marked as away yet for ${rm}`;
+    daysAwayText.classList.remove("active");
+  }
 }
 
 /* ============================================================

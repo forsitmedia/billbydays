@@ -931,6 +931,7 @@ body.pro-mode .install-hint strong {
       color: var(--text-muted);
     }
 
+    
   </style>
 </head>
 
@@ -1037,14 +1038,13 @@ body.pro-mode .install-hint strong {
 </footer>
   
 
-  <!-- EXPENSE MODAL (PRO) -->
-<div id="expModal" class="modal-overlay">
-  <div class="modal">
-    <div class="modal-header">
-      <div id="modalTitle" class="modal-title"></div>
-      <button id="billHelpBtn" type="button" class="modal-help-btn">?</button>
-    </div>
-
+   <!-- EXPENSE MODAL (PRO) -->
+  <div id="expModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div id="modalTitle" class="modal-title"></div>
+        <button id="billHelpBtn" type="button" class="modal-help-btn">?</button>
+      </div>
 
       <div class="modal-field">
         <label>Total amount (€)</label>
@@ -1074,53 +1074,118 @@ body.pro-mode .install-hint strong {
       </div>
 
       <div class="help-body">
+        <!-- INTRO GENÉRICA -->
         <p class="help-intro">
           Use this quick guide to find the <strong>total amount</strong> and the optional
           <strong>fixed part</strong> on your <span id="billHelpType">electricity</span> bill.
         </p>
 
-        <!-- STEP 1 -->
-        <div class="help-step">
-          <h4>1. Check the bill period and the total</h4>
-          <p>
-            The green bar shows the <strong>bill period</strong>
-            and the green circle shows the <strong>total to pay</strong> for this bill.
-            That’s the number you put in <strong>“Total amount (€)”</strong>.
-          </p>
-          <img
-            src="image index/home data.jpg"
-            alt="Example bill with billing period and total highlighted"
-          />
-          <p>
-            In this case, the bill period is from <strong>27/08/2025 to 26/06/2025</strong> and the total amount to input would be <strong>€ 129.86</strong>.
-          </p>
-          <br>
+        <!-- ================== ELECTRICITY ================== -->
+        <div id="electricityHelp" class="help-section">
+          <!-- STEP 1 -->
+          <div class="help-step">
+            <h4>1. Check the bill period and the total</h4>
+            <p>
+              The green bar shows the <strong>bill period</strong>
+              and the green circle shows the <strong>total to pay</strong> for this bill.
+              That’s the number you put in <strong>“Total amount (€)”</strong>.
+            </p>
+            <img
+              src="image index/home data.jpg"
+              alt="Example bill with billing period and total highlighted"
+            />
+            <p>
+              In this case, the bill period is from <strong>27/08/2025 to 26/06/2025</strong> and the total amount to input would be <strong>€ 129.86</strong>.
+            </p>
+            <br>
+          </div>
+
+          <!-- STEP 2 -->
+          <div class="help-step">
+            <h4>2. Separate variable vs fixed part</h4>
+            <p>
+              The yellow boxes show the <strong>variable part</strong> (what changes
+              with how much you use – kWh, m³, etc.).  
+              The red area at the bottom shows the <strong>fixed part</strong>
+              (what stays the same independently of your consumption like taxes, fees and CAV in this example).
+            </p>
+            <img
+              src="image index/back page data.jpg"
+              alt="Example bill with fixed and variable parts highlighted"
+            />
+            <p>
+              In this case, the important parts to input and remember are:
+              The <strong>Total bill amount</strong>: <strong>€ 129.86</strong> <br>
+              and the <strong>Fixed part</strong> (1)+(2)+(3): <strong>€ 38.01</strong>.
+              <br><br>
+              The variable part will be automatically calculated by Bill by Days once you input these two numbers. 
+              In this case it would be <strong>€ 91.85</strong>, the yellow area.
+            </p>
+          </div>
         </div>
 
-        <!-- STEP 2 -->
-        <div class="help-step">
-          <h4>2. Separate variable vs fixed part</h4>
-          <p>
-            The yellow boxes show the <strong>variable part</strong> (what changes
-            with how much you use – kWh, m³, etc.).  
-            The red area at the bottom shows the <strong>fixed part</strong>
-            (what stays the same independently of your consumption like taxes, fees and CAV in this example).
-          </p>
-          <img
-            src="image index/back page data.jpg"
-            alt="Example bill with fixed and variable parts highlighted"
-          />
-          <p>
-            In this case, the important parts to input and remember are:
-            The <strong>Total bill amount</strong>: <strong>€ 129.86</strong> <br>
-            and the <strong>Fixed part</strong> (1)+(2)+(3): <strong>€ 38.01</strong>.
-            <br>
-            <br>
-            The variable part will be automatically calculated by Bill by Days once you input these two numbers. 
-            in this case it would be <strong>€ 91.85</strong>, the yellow area.
-          </p>
+        <!-- ================== WATER ================== -->
+        <div id="waterHelp" class="help-section" style="display:none;">
+          <div class="help-step">
+            <h4>1. Find the bill period and the total</h4>
+            <p>
+              On most water bills you’ll see a line with the <strong>billing period</strong>
+              (for example: 01/05/2025 – 31/05/2025) and a big number that says
+              <strong>“Total to pay”</strong> or similar.
+              That total is what you put in <strong>“Total amount (€)”</strong>.
+            </p>
+          </div>
+
+          <div class="help-step">
+            <h4>2. Separate consumption from fixed fees</h4>
+            <p>
+              • <strong>Variable part</strong> – usually called something like
+              <em>“water consumption”</em>, measured in <strong>m³</strong>.
+              This changes with how much water you use. <br>
+              • <strong>Fixed part</strong> – things like
+              <em>“service fee”, “availability fee”, “meter fee”</em> or similar.
+              These stay the same even if you’re travelling and use almost no water.
+            </p>
+            <p>
+              In Bill by Days you type:
+              <br>• the <strong>Total amount</strong> of the bill, and
+              <br>• the sum of all the <strong>fixed fees</strong> as the “Fixed part (€)”.
+              <br>The app will automatically treat the rest as the variable part.
+            </p>
+          </div>
         </div>
-<br>
+
+        <!-- ================== GAS ================== -->
+        <div id="gasHelp" class="help-section" style="display:none;">
+          <div class="help-step">
+            <h4>1. Look for the billing period and total</h4>
+            <p>
+              Gas bills usually show a <strong>period</strong> (for example: 10/04/2025 – 09/05/2025)
+              and a <strong>total to pay</strong> or <strong>amount due</strong>.
+              That total is what you put in <strong>“Total amount (€)”</strong>.
+            </p>
+          </div>
+
+          <div class="help-step">
+            <h4>2. Identify fixed charges vs consumption</h4>
+            <p>
+              • <strong>Variable part</strong> – charges linked to
+              <em>kWh</em> or <em>m³ of gas</em> consumed, often called
+              “energy”, “consumption” or “usage”. <br>
+              • <strong>Fixed part</strong> – things like “fixed term”, “supply fee”,
+              “network access”, “meter rental”, taxes that don’t change with usage, etc.
+            </p>
+            <p>
+              Add all those fixed charges together and type that as the
+              <strong>“Fixed part (€)”</strong> in Bill by Days.
+              The rest of the total will be treated as the variable part and split fairly
+              across days and roommates.
+            </p>
+          </div>
+        </div>
+
+        <!-- FOOTNOTE GENÉRICA -->
+        <br>
         <p class="help-footnote">
           In Bill by Days you can type the full <strong>Total amount (€)</strong>, and – if you want –
           the <strong>Fixed part (€)</strong>. We automatically split the variable part
@@ -1130,6 +1195,7 @@ body.pro-mode .install-hint strong {
     </div>
   </div>
   <!-- END BILL HELP OVERLAY -->
+
 
 
   <!-- Calendar overlay -->

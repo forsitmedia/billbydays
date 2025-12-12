@@ -153,6 +153,8 @@ function formatShort(dateOrISO) {
   }
 })();
 
+ensureYouRoommate();
+
 
 /* ======================
    MODE SWITCH
@@ -432,23 +434,59 @@ const closeBillHelp    = document.getElementById("closeBillHelp");
 const billHelpTitle    = document.getElementById("billHelpTitle");
 const billHelpTypeSpan = document.getElementById("billHelpType");
 
+// NUEVO: secciones específicas por tipo de factura
+const electricityHelp = document.getElementById("electricityHelp");
+const waterHelp       = document.getElementById("waterHelp");
+const gasHelp         = document.getElementById("gasHelp");
+const helpSections    = [electricityHelp, waterHelp, gasHelp];
+
 if (billHelpBtn && billHelpOverlay && closeBillHelp) {
   billHelpBtn.onclick = () => {
     if (!editingExpense) return;
 
-    // adapt text to the selected emoji (Electricity, Water, Gas, Other)
-    const type = (editingExpense.name || "bill").toLowerCase();
-    billHelpTypeSpan.textContent = type;
-    billHelpTitle.textContent = `How to read your ${type} bill`;
+    // nombre del gasto que estás editando (Electricity, Water, Gas…)
+    const rawName = (editingExpense.name || "bill").toLowerCase();
 
+    // por defecto: electricidad
+    let labelType = "electricity";
+    let sectionToShow = electricityHelp;
+
+    // si el gasto es agua
+    if (rawName.includes("water")) {
+      labelType = "water";
+      sectionToShow = waterHelp || sectionToShow;
+    }
+    // si el gasto es gas
+    else if (rawName.includes("gas")) {
+      labelType = "gas";
+      sectionToShow = gasHelp || sectionToShow;
+    }
+    // si es "other" o algo raro, se queda con electricidad por defecto
+
+    // actualizar textos del overlay
+    billHelpTypeSpan.textContent = labelType;
+    billHelpTitle.textContent = `How to read your ${labelType} bill`;
+
+    // ocultar todas las secciones primero
+    helpSections.forEach((section) => {
+      if (section) section.style.display = "none";
+    });
+
+    // mostrar solo la sección correcta
+    if (sectionToShow) {
+      sectionToShow.style.display = "block";
+    }
+
+    // abrir el overlay
     billHelpOverlay.style.display = "flex";
   };
 
+  // cerrar con la X
   closeBillHelp.onclick = () => {
     billHelpOverlay.style.display = "none";
   };
 
-  // click outside the card to close
+  // cerrar haciendo click fuera de la tarjeta
   billHelpOverlay.onclick = (event) => {
     if (event.target === billHelpOverlay) {
       billHelpOverlay.style.display = "none";
@@ -481,6 +519,20 @@ function renumberDefaultRoommates() {
 }
 
 
+function ensureYouRoommate() {
+  // If empty, always create the first visible card
+  if (!Array.isArray(roommates) || roommates.length === 0) {
+    roommates = ["Me"];
+    return;
+  }
+
+  // If "You" is missing (old sessions), add it at the beginning
+  const hasYou = roommates.some((n) => (n || "").trim().toLowerCase() === "me");
+  if (!hasYou) roommates.unshift("Me");
+}
+
+
+
 
 function renderRoommates() {
   rmGrid.innerHTML = "";
@@ -491,11 +543,15 @@ function renderRoommates() {
   add.className = "rm-card add-rm";
   add.textContent = "+ Add";
   add.onclick = () => {
-  // add a new default roommate, then renumber all defaults
-  roommates.push(`Roommate ${roommates.length + 1}`);
+  // Count only default "Roommate X" names, so "You" doesn't affect numbering
+  const nextNum =
+    roommates.filter((n) => isDefaultRoommateName(n)).length + 1;
+
+  roommates.push(`Roommate ${nextNum}`);
   renumberDefaultRoommates();
   renderRoommates();
 };
+
 
   rmGrid.appendChild(add);
 
@@ -503,6 +559,10 @@ function renderRoommates() {
     const card = document.createElement("div");
     card.className = "rm-card";
     card.textContent = rm;
+
+    const isYou = (rm || "").trim().toLowerCase() === "me";
+if (isYou) card.classList.add("rm-default");
+
 
     // rename (Pro only)
     card.onclick = () => {
@@ -517,18 +577,20 @@ function renderRoommates() {
       }
     };
 
-    const del = document.createElement("div");
-    del.className = "rm-delete";
-    del.textContent = "×";
-    del.onclick = (e) => {
-  e.stopPropagation();
-  roommates.splice(i, 1);       // remove selected roommate
-  renumberDefaultRoommates();   // compact Roommate 1,2,3…
-  renderRoommates();
-};
+   if (!isYou) {
+  const del = document.createElement("div");
+  del.className = "rm-delete";
+  del.textContent = "×";
+  del.onclick = (e) => {
+    e.stopPropagation();
+    roommates.splice(i, 1);       // remove selected roommate
+    renumberDefaultRoommates();   // compact Roommate 1,2,3…
+    renderRoommates();
+  };
 
+  card.appendChild(del);
+}
 
-    card.appendChild(del);
     rmGrid.appendChild(card);
   });
 }

@@ -161,30 +161,58 @@ ensureYouRoommate();
 ====================== */
 
 function applyModeUI() {
-
+  // Switch theme
   if (isPro) {
     document.body.classList.add("pro-mode");
-    modeSwitch.textContent = "Pro mode";
+
+    // Top-right button becomes "Back to Free"
+    modeSwitch.textContent = "Back to Free";
+    modeSwitch.classList.remove("try-pro");
+    modeSwitch.classList.add("back-free");
+
     totalSub.textContent =
-      "In Pro mode, you can use all expenses. The total is automatically calculated below.";
+      "Pro mode: add multiple expenses (electricity, water, gas, other). Total is calculated automatically.";
   } else {
     document.body.classList.remove("pro-mode");
-    modeSwitch.textContent = "Free mode";
+
+    // Top-right button becomes "Try Pro"
+    modeSwitch.textContent = "Try Pro mode";
+    modeSwitch.classList.remove("back-free");
+    modeSwitch.classList.add("try-pro");
+
     totalSub.textContent =
-      "In Free mode you can use only one expense per time. The total is still calculated from the expense you digit.";
+      "Free mode: add only ONE expense. Want electricity + water + gas? Tap “Try Pro mode”.";
   }
 
+  // Re-render so locked visuals update immediately
+  renderExpenses();
   updateTotalBillFromExpenses();
 }
 
-
-
+// Click behavior (with a safe confirm when leaving Pro)
 modeSwitch.onclick = () => {
+  if (isPro) {
+    // If user already has multiple expenses, confirm before going back to Free
+    const activeCount = expenses.filter(e => (e.total || 0) > 0).length;
+    if (activeCount > 1) {
+      const ok = confirm(
+        "Free mode allows only ONE expense.\n\nIf you switch back to Free, only the first expense will be used when you continue.\n\nSwitch to Free anyway?"
+      );
+      if (!ok) return;
+    }
+  }
+
   isPro = !isPro;
+
+  // Persist immediately so refresh keeps the same mode
+  localStorage.setItem("splitroomMode", isPro ? "pro" : "free");
+
   applyModeUI();
 };
 
+// Run once on load
 applyModeUI();
+
 
 
 applyToAllBtn.onclick = () => {
@@ -209,7 +237,14 @@ function renderExpenses() {
   expenseGrid.innerHTML = "";
   expenses.forEach((exp) => {
     const item = document.createElement("div");
-    item.className = "expense-item";
+item.className = "expense-item";
+
+// FREE mode: if one expense is already filled, visually lock the others
+const used = expenses.find(e => (e.total || 0) > 0);
+if (!isPro && used && exp.id !== used.id) {
+  item.classList.add("locked");
+}
+
     item.innerHTML = `
       ${exp.total > 0 ? '<div class="exp-reset">×</div>' : ''}
       <div class="exp-icon">${exp.icon}</div>

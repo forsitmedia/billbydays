@@ -97,6 +97,51 @@
       white-space: nowrap;
     }
 
+    /* ============ MODE SWITCH CTA (Free) / EXIT (Pro) ============ */
+.mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+/* Free: looks like a "Try Pro" CTA */
+.mode-switch.try-pro {
+  background: linear-gradient(135deg, #4f46e5, #0e1541);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.12);
+}
+
+/* Pro: looks like "Back to Free" */
+.mode-switch.back-free {
+  background: #1e1b4b;
+  border: 1px solid #6366f1;
+  color: #e5e7eb;
+}
+
+/* Little icons without changing your HTML */
+.mode-switch.try-pro::before { content: "✨"; }
+.mode-switch.back-free::before { content: "←"; }
+
+/* ============ FREE MODE LOCKED EXPENSE VISUALS ============ */
+.expense-item.locked {
+  opacity: 0.45;
+  transform: none !important;
+}
+
+.expense-item.locked::after {
+  content: "🔒 Pro";
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.82);
+  color: #fff;
+}
+
     /* Cards */
     .card {
       background: var(--card-bg);

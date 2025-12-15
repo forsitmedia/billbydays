@@ -1,7 +1,10 @@
 import express from "express";
 import cors from "cors";
 import multer from "multer";
-import pdfParse from "pdf-parse";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+const pdfParse = require("pdf-parse"); // ✅ CommonJS safe import (Node v22 compatible)
 
 const app = express();
 app.use(cors());
@@ -16,12 +19,10 @@ function parseMoneyPT(str) {
 }
 
 function extractBillFieldsFromText(text) {
-  // Normalize
   const t = text.replace(/\u00A0/g, " "); // non-breaking spaces
-  const lines = t.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const lines = t.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 
   // 1) TOTAL AMOUNT
-  // Look for "TOTAL A PAGAR" / "A PAGAR" / "TOTAL" near a money value
   const moneyRegex = /(\d{1,3}(?:\.\d{3})*,\d{2})\s*€?/;
   let totalAmount = null;
   let totalEvidence = null;
@@ -38,19 +39,21 @@ function extractBillFieldsFromText(text) {
     }
   }
 
-  // fallback: last prominent money value in doc (not perfect but helps)
+  // fallback: last money value in document
   if (totalAmount == null) {
-    const all = [...t.matchAll(new RegExp(moneyRegex, "g"))].map(m => parseMoneyPT(m[1])).filter(n => n != null);
+    const all = [...t.matchAll(new RegExp(moneyRegex, "g"))]
+      .map((m) => parseMoneyPT(m[1]))
+      .filter((n) => n != null);
     if (all.length) totalAmount = all[all.length - 1];
   }
 
-  // 2) BILL PERIOD (start/end)
-  // Matches: "de 08-09-2025 a 09-10-2025"
+  // 2) BILL PERIOD
   const periodRegex = /de\s*(\d{2}-\d{2}-\d{4})\s*a\s*(\d{2}-\d{2}-\d{4})/i;
   let periodStart = null, periodEnd = null, periodEvidence = null;
 
   for (const line of lines) {
-    if (line.toUpperCase().includes("PERÍODO") || line.toUpperCase().includes("PERIODO")) {
+    const up = line.toUpperCase();
+    if (up.includes("PERÍODO") || up.includes("PERIODO")) {
       const m = line.match(periodRegex);
       if (m) {
         periodStart = m[1];
@@ -61,29 +64,33 @@ function extractBillFieldsFromText(text) {
     }
   }
 
-  // 3) FIXED PART (sum of fixed lines)
-  // Heuristic v1: line contains FIXO or DISPONIBILIDADE or " dias " and ends with money
+  // 3) FIXED PART (heuristic v1)
   const fixedKeywords = ["FIXO", "DISPONIBILIDADE", "ASSINATURA", "MENSALIDADE", "POTÊNCIA", "POTENCIA", "ALUGUER"];
   const fixedItems = [];
 
   for (const line of lines) {
     const up = line.toUpperCase();
-    const hasKeyword = fixedKeywords.some(k => up.includes(k));
+    const hasKeyword = fixedKeywords.some((k) => up.includes(k));
     const looksDaily = up.includes("DIAS");
+
     if ((hasKeyword || looksDaily) && moneyRegex.test(line)) {
       const m = line.match(moneyRegex);
       const amount = m ? parseMoneyPT(m[1]) : null;
       if (amount != null && amount > 0) {
-        fixedItems.push({ label: line.slice(0, 60), amount, evidence: line });
+        fixedItems.push({
+          label: line.slice(0, 60),
+          amount,
+          evidence: line
+        });
       }
     }
   }
 
-  // For your Águas de Cascais example, we really want specific items:
-  // Tarifa disponibilidade, Saneamento fixo, RSU fixo
-  // This boosts accuracy without breaking “universal v1”.
+  // Provider-specific boost for Águas de Cascais style bills (still safe as a heuristic)
   const preferred = ["TARIFA DISPONIBILIDADE", "SANEAMENTO FIXO", "RSU FIXO"];
-  const boosted = fixedItems.filter(it => preferred.some(p => it.evidence.toUpperCase().includes(p)));
+  const boosted = fixedItems.filter((it) =>
+    preferred.some((p) => it.evidence.toUpperCase().includes(p))
+  );
   const finalFixedItems = boosted.length ? boosted : fixedItems;
 
   const fixedTotal = finalFixedItems.reduce((sum, it) => sum + it.amount, 0);
@@ -108,7 +115,7 @@ app.post("/api/scan-bill", upload.single("file"), async (req, res) => {
     const pdfData = await pdfParse(req.file.buffer);
     const text = (pdfData.text || "").trim();
 
-    // If text is empty, this is probably a scanned PDF → needs OCR (next step)
+    // If text is empty, likely scanned → needs OCR (next step)
     if (text.length < 50) {
       return res.status(422).json({
         error: "This PDF looks scanned (no readable text). Next step is OCR.",
@@ -120,7 +127,7 @@ app.post("/api/scan-bill", upload.single("file"), async (req, res) => {
     return res.json({ ok: true, extracted });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Server error", details: String(err?.message || err) });
   }
 });
 

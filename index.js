@@ -1397,7 +1397,7 @@ if (billUpload) {
     setContinueEnabled(false);
     showFullLoading({
       theme: scanningId,
-      expectedMs: 25000 * (multiPdfBills ? pdfFiles.length : 1),
+      expectedMs: 60000 * (multiPdfBills ? pdfFiles.length : 1),
     });
 
     // hide error text while working

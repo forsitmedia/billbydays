@@ -197,10 +197,12 @@ function hideFullLoading() {
 
 
 
-const SCAN_ENDPOINT = "http://localhost:3000/api/scan-bill";
-const DI_ENDPOINT = "http://localhost:3000/api/di-bill?pages=1-4";
-const OCR_ENDPOINT = "http://localhost:3000/api/ocr-bill";
-const ANALYZE_ENDPOINT = "http://localhost:3000/api/analyze-bill";
+const API_BASE = "https://billbydays-backend.onrender.com";
+const SCAN_ENDPOINT = `${API_BASE}/api/scan-bill`;
+const DI_ENDPOINT = `${API_BASE}/api/di-bill?pages=1-4`;
+const OCR_ENDPOINT = `${API_BASE}/api/ocr-bill`;
+const ANALYZE_ENDPOINT = `${API_BASE}/api/analyze-bill`;
+
 
 // ===============================
 // UI Helpers: spinner badge + continue blocking

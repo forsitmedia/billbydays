@@ -42,7 +42,7 @@ function setLoadingTheme(theme = "purple") {
   let fg = "#111827";
   let accent = "#b04cff";
 
-  if (theme === "electricity") { accent = "#22c55e"; } // green
+  if (theme === "electricity") { accent = "#ffff00"; } // yellow
   if (theme === "water")       { accent = "#4aa3ff"; } // blue
   if (theme === "gas")         { accent = "#9ca3af"; } // grey
 
@@ -71,8 +71,9 @@ function pickRandomFacts() {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  const count = Math.random() < 0.5 ? 2 : 3; // 2 or 3
+    const count = Math.min(6, arr.length); // show 6 facts (or less if not enough)
   return arr.slice(0, count);
+
 }
 
 function renderLoadingFact(text) {
@@ -181,19 +182,6 @@ function hideFullLoading() {
 }
 
 
-function hideFullLoading() {
-  if (!loadingOverlay) return;
-
-  loadingOverlay.classList.remove("show");
-  document.body.classList.remove("is-loading");
-
-  if (loadingTick) { clearInterval(loadingTick); loadingTick = null; }
-  if (loadingTimer) { clearTimeout(loadingTimer); loadingTimer = null; }
-
-  // reset bar so next scan starts clean
-  if (loadingProgress) loadingProgress.style.width = "0%";
-}
-
 
 
 
@@ -237,6 +225,23 @@ const cancelModal = document.getElementById("cancelModal");
 const saveModal = document.getElementById("saveModal");
 
 const upgradePopup = document.getElementById("upgradePopup");
+
+
+
+function hideFixedDetails() {
+  const detailsBox = document.getElementById("fixedDetails");
+  if (!detailsBox) return;
+  detailsBox.style.display = "none";
+  detailsBox.innerHTML = "";
+}
+
+// If user clears Total (iPhone “x”), hide scanned breakdown immediately
+expTotal.addEventListener("input", () => {
+  if (expTotal.value === "" || Number(expTotal.value) <= 0) {
+    hideFixedDetails();
+  }
+});
+
 
 // Calendar DOM
 const dateRangeField = document.getElementById("dateRangeField");
@@ -489,18 +494,18 @@ if (!isPro && used && exp.id !== used.id) {
     const resetBtn = item.querySelector(".exp-reset");
     if (resetBtn) {
       resetBtn.onclick = (event) => {
-        event.stopPropagation(); // do NOT open modal
-        exp.total = 0;
-        exp.fixed = 0;
+  event.stopPropagation();
+  exp.total = 0;
+  exp.fixed = 0;
+  exp.fixedItems = []; // ✅ clear scanned breakdown
 
-        // Reset free-mode lock if this was the active expense
-        if (freeActiveExpenseId === exp.id) {
-          freeActiveExpenseId = null;
-        }
+  if (freeActiveExpenseId === exp.id) {
+    freeActiveExpenseId = null;
+  }
 
-        renderExpenses();
-        updateTotalBillFromExpenses();
-      };
+  renderExpenses();
+  updateTotalBillFromExpenses();
+};
     }
 
     // Click on the card
@@ -735,6 +740,7 @@ resetBill.onclick = () => {
   expenses.forEach(e => {
     e.total = 0;
     e.fixed = 0;
+    e.fixedItems = []; // ✅ also clear scanned breakdown
   });
   freeActiveExpenseId = null;
   renderExpenses();

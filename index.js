@@ -91,7 +91,7 @@ function renderLoadingFact(text) {
 
 
 
-function showFullLoading({ theme = "purple", expectedMs = 25000 } = {}) {
+function showFullLoading({ theme = "purple", expectedMs = 60000 } = {}) {
   if (!loadingOverlay) return;
 
   if (document.body.classList.contains("pro-mode")) setLoadingTheme("pro");
@@ -105,9 +105,9 @@ function showFullLoading({ theme = "purple", expectedMs = 25000 } = {}) {
 
   const stages = [
     { t: 0,     text: "Detecting text from your bill…", hint: "Tip: Uploading the full PDF improves accuracy." },
-    { t: 5000,  text: "Keeping your privacy safe (removing confidential data)…", hint: "We remove personal details before sending text to AI." },
-    { t: 10000, text: "AI analyzing the bill structure (fixed vs variable)…", hint: "Fixed costs = things you pay even with 0 consumption." },
-    { t: 20000, text: "Finalizing results…", hint: "Almost there — thanks for your patience." },
+    { t: 10000,  text: "Keeping your privacy safe (removing confidential data)…", hint: "We remove personal details before sending text to AI." },
+    { t: 25000, text: "AI analyzing the bill structure (fixed vs variable)…", hint: "Fixed costs = things you pay even with 0 consumption." },
+    { t: 45000, text: "Finalizing results…", hint: "Almost there — thanks for your patience." },
   ];
 
   loadingOverlay.classList.add("show");

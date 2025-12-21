@@ -10,6 +10,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+  "node": ">=20.0.0"
+},
   "dependencies": {
     "@azure/ai-form-recognizer": "^5.1.0",
     "@napi-rs/canvas": "^0.1.84",

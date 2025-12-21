@@ -219,6 +219,87 @@
     .expense-item:hover {
       transform: translateY(-3px);
     }
+/* ============ FIXED PART "CALCULATING" OVERLAY (IN-CARD) ============ */
+
+/* Utility colors (tweak if you want) */
+.expense-item[data-type="electricity"] { --util: #f7c948; } /* yellow */
+.expense-item[data-type="water"]       { --util: #4aa3ff; } /* blue */
+.expense-item[data-type="gas"]         { --util: #a9a9a9; } /* grey */
+.expense-item[data-type="other"]       { --util: #7a7a7a; } /* neutral */
+
+.expense-item {
+  position: relative; /* needed for overlay */
+}
+
+/* ============ FIXED PART CALCULATING OVERLAY ============ */
+
+/* Utility colors */
+.expense-item[data-type="electricity"] { --util: #f7c948; }
+.expense-item[data-type="water"]       { --util: #4aa3ff; }
+.expense-item[data-type="gas"]         { --util: #9ca3af; }
+.expense-item[data-type="other"]       { --util: #9ca3af; }
+
+.expense-item {
+  position: relative;
+}
+
+/* Full in-card overlay */
+.expense-item .fixed-badge {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+
+  background: rgba(246, 247, 249, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  z-index: 10;
+}
+
+/* Show overlay */
+.expense-item.calculating .fixed-badge {
+  display: flex;
+}
+
+/* Spinner */
+.fixed-spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid rgba(0,0,0,0.15);
+  border-top-color: var(--util);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Calculating text */
+.expense-item .fixed-badge .calc-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Hide ALL card content while calculating */
+.expense-item.calculating > *:not(.fixed-badge) {
+  visibility: hidden;
+}
+
+/* ============ DISABLED CONTINUE BUTTON ============ */
+.btn.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 
     .exp-icon {
       font-size: 24px;
@@ -361,7 +442,10 @@
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.45);
+      background: rgba(2, 6, 23, 0.45);
+backdrop-filter: blur(8px);
+-webkit-backdrop-filter: blur(8px);
+
       display: none;
       justify-content: center;
       align-items: center;
@@ -436,7 +520,10 @@
     .calendar-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.35);
+      background: rgba(2, 6, 23, 0.35);
+backdrop-filter: blur(8px);
+-webkit-backdrop-filter: blur(8px);
+
       display: none;
       justify-content: center;
       align-items: center;
@@ -555,10 +642,6 @@
   object-fit: cover;
 }
 
-
-
-
-/* ============ PRO MODE THEME ============ */
 
 /* ============ PRO MODE THEME ============ */
 
@@ -976,7 +1059,521 @@ body.pro-mode .install-hint strong {
       color: var(--text-muted);
     }
 
-    
+    /* ... inside <style> ... */
+
+.fixed-details-list {
+  margin-top: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #4b5563;
+}
+
+.fixed-item-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  align-items: flex-start;
+}
+
+.fixed-item-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.fixed-item-right {
+  flex: 0 0 110px;          /* ✅ keeps a consistent right column width */
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  white-space: nowrap;
+  line-height: 1.05;
+}
+
+.fixed-item-amt {
+  font-weight: 600;
+  color: #111827;
+}
+
+.fixed-item-vat {
+  font-size: 9px;
+  opacity: 0.6;
+  margin-top: 2px;
+  line-height: 1.05;
+}
+
+
+.fixed-items-note {
+  margin-top: 6px;
+  font-size: 9px;
+  opacity: 0.6;
+}
+
+
+/* Dark mode support */
+body.pro-mode .fixed-item-amt {
+  color: #e5e7eb;
+}
+
+/* ============ FULL PAGE LOADING (simple squares + staged copy) ============ */
+
+/* default theme values (we’ll override from JS) */
+:root{
+  --load-bg: #ffffff;
+  --load-fg: #111827;
+  --load-accent: #b04cff; /* purple */
+  --load-muted: rgba(17,24,39,0.55);
+}
+
+.loading-overlay{
+  position: fixed;
+  inset: 0;
+  background: var(--load-bg);
+  color: var(--load-fg);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 18px;
+  z-index: 5000;
+  padding: 28px 18px;
+  text-align: center;
+}
+
+.loading-overlay.show{
+  display: flex;
+}
+
+body.is-loading{
+  overflow: hidden;
+}
+
+.loading-squares{
+  position: relative;
+  width: 170px;
+  height: 60px;
+}
+
+.sq-row{
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+
+.sq{
+  width: 18px;
+  height: 18px;
+  background: var(--load-accent);
+  border-radius: 2px;
+  opacity: 0.9;
+  animation: sqPulse 1s infinite ease-in-out;
+}
+
+.sq-row .sq:nth-child(2){ animation-delay: .12s; }
+.sq-row .sq:nth-child(3){ animation-delay: .24s; }
+.sq-row .sq:nth-child(4){ animation-delay: .36s; }
+.sq-row .sq:nth-child(5){ animation-delay: .48s; }
+
+@keyframes sqPulse{
+  0%, 100% { transform: translateY(0); opacity: 0.7; }
+  50%      { transform: translateY(-4px); opacity: 1; }
+}
+
+/* tilted flying square like your screenshot */
+.sq-fly{
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: var(--load-accent);
+  border-radius: 2px;
+  left: calc(50% - 72px);
+  bottom: 18px;
+  transform: rotate(18deg);
+  animation: flySq 1s infinite ease-in-out;
+  opacity: 0.95;
+}
+
+@keyframes flySq{
+  0%   { transform: translate(0,0) rotate(18deg); opacity: 0.4; }
+  35%  { transform: translate(18px,-10px) rotate(25deg); opacity: 1; }
+  70%  { transform: translate(58px,0px) rotate(18deg); opacity: 0.9; }
+  100% { transform: translate(0,0) rotate(18deg); opacity: 0.4; }
+}
+
+.loading-copy{
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.loading-title{
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.loading-step{
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.loading-progress-wrap{
+  width: 100%;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.loading-progress-track{
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.loading-progress-bar{
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--load-accent);
+  transition: width 350ms ease;
+}
+
+.loading-eta{
+  font-size: 12px;
+  color: var(--load-muted);
+  font-weight: 600;
+}
+
+.loading-hint{
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--load-muted);
+  line-height: 1.35;
+  max-width: 380px;
+}
+
+/* ===========================
+   BILL UPLOAD (pretty widget)
+=========================== */
+
+.bill-upload { margin: 10px 0 6px; }
+
+.bill-upload-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.upload-zone{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+
+  cursor: pointer;
+  user-select: none;
+  transition: 0.18s ease;
+}
+
+.upload-zone:hover{
+  transform: translateY(-1px);
+  border-color: rgba(34,197,94,0.7);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.06);
+}
+
+.upload-hero{
+  width: 118px;
+  height: 118px;
+  border-radius: 999px;
+  border: 2px dashed #e5e7eb;
+  background: #ffffff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.upload-doc{
+  width: 64px;
+  height: 64px;
+  color: #9ca3af; /* icon grey */
+  opacity: 0.9;
+}
+.upload-doc svg{ width: 100%; height: 100%; }
+
+.upload-plus{
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+
+  background: var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 4px solid #ffffff;
+  box-shadow: 0 10px 16px rgba(34,197,94,0.25);
+}
+
+.upload-copy{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.upload-title{
+  font-weight: 700;
+  color: var(--text-main);
+  font-size: 14px;
+}
+
+.upload-sub{
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.upload-file{
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  background: #eef2f7;
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  border-radius: 999px;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Pro mode (dark) */
+body.pro-mode .upload-zone{
+  background: #020617;
+  border-color: #1f2937;
+}
+
+body.pro-mode .upload-hero{
+  background: #020617;
+  border-color: rgba(148,163,184,0.35);
+}
+
+body.pro-mode .upload-title{ color: #e5e7eb; }
+body.pro-mode .upload-sub{ color: #9ca3af; }
+body.pro-mode .upload-doc{ color: #94a3b8; }
+
+body.pro-mode .upload-file{
+  background: #0b1224;
+  border-color: #1f2937;
+  color: #e5e7eb;
+}
+
+body.pro-mode .upload-plus{
+  border-color: #020617;
+}
+
+
+body.pro-mode .loading-fact{
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.10);
+}
+
+
+  /* ===========================
+   LOADING FACTS (bottom, 1 at a time)
+=========================== */
+
+.loading-facts{
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 30px;              /* closer to bottom */
+  padding: 0 18px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.loading-fact{
+  max-width: 520px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.35;
+  font-weight: 400;          /* normal (not bold) */
+  color: var(--load-fg);     /* black on light, white on dark */
+  opacity: 0.82;
+
+  background: transparent;   /* NO grey box */
+  border: 0;
+  padding: 0;
+  margin: 0;
+
+  transition: opacity 450ms ease, transform 450ms ease;
+}
+
+.loading-fact.is-hidden{
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+@media (max-width: 420px){
+  .loading-copy{ max-width: 340px; }
+  .loading-title{ font-size: 16px; }
+  .loading-step{ font-size: 14px; }
+  .loading-eta{ font-size: 12px; }
+  .loading-hint{ font-size: 12px; max-width: 320px; }
+
+  .loading-fact{ font-size: 14px; }
+}
+
+
+/* ===========================
+   PRO MODE: MODALS + CALENDAR (match the dark theme)
+   (Safe: only applies when <body> has class="pro-mode")
+=========================== */
+
+/* --- Expense modal --- */
+body.pro-mode .modal{
+  background: #020617;
+  border: 1px solid #111827;
+  box-shadow: 0 22px 44px rgba(0,0,0,0.65);
+  color: #e5e7eb;
+}
+
+body.pro-mode .modal-title{
+  color: #e5e7eb;
+}
+
+body.pro-mode .modal-field label{
+  color: #9ca3af;
+}
+
+body.pro-mode .modal-field input{
+  background: #0b1224;
+  border-color: #1f2937;
+  color: #e5e7eb;
+}
+
+body.pro-mode .modal-btn.cancel{
+  background: #111827;
+  color: #e5e7eb;
+  border: 1px solid #374151;
+}
+
+body.pro-mode .modal-btn.cancel:hover{
+  background: #0b1224;
+}
+
+/* --- Fixed breakdown box inside the modal --- */
+/* Strong selector so it wins even if other rules exist */
+body.pro-mode #fixedDetails.fixed-details-list{
+  background: #111827;
+  border-color: #374151;
+  color: #9ca3af;
+}
+
+/* Works with BOTH versions:
+   - old: .fixed-item-row span:last-child
+   - new: .fixed-item-amt
+*/
+body.pro-mode .fixed-item-row span:last-child,
+body.pro-mode .fixed-item-amt{
+  color: #e5e7eb;
+}
+
+/* Make IVA/VAT line + disclaimer smaller (if those classes exist) */
+.fixed-item-vat{
+  font-size: 9px;
+  opacity: 0.6;
+}
+.fixed-items-note{
+  font-size: 9px;
+  opacity: 0.6;
+}
+
+/* --- Calendar modal --- */
+body.pro-mode .calendar-modal{
+  background: #020617;
+  border-color: #111827;
+  box-shadow: 0 22px 44px rgba(0,0,0,0.65);
+}
+
+body.pro-mode #calendarMonthLabel{
+  color: #e5e7eb;
+  font-weight: 600;
+}
+
+body.pro-mode .calendar-day-name{
+  color: #9ca3af;
+}
+
+body.pro-mode .calendar-day{
+  color: #e5e7eb;
+}
+
+body.pro-mode .calendar-day:hover{
+  background: rgba(148,163,184,0.10);
+}
+
+body.pro-mode .calendar-day.in-range{
+  background: rgba(34,197,94,0.14);
+}
+
+/* month nav buttons */
+body.pro-mode .icon-btn{
+  background: #111827;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+body.pro-mode .icon-btn:hover{
+  background: #0b1224;
+}
+
+/* "Copy main period" chip */
+body.pro-mode .calendar-copy-main{
+  background: #111827;
+  color: #e5e7eb;
+  border: 1px solid #374151;
+}
+body.pro-mode .calendar-copy-main:hover{
+  background: #0b1224;
+}
+
+
+
+
   </style>
 </head>
 
@@ -995,9 +1592,95 @@ body.pro-mode .install-hint strong {
 </header>
 
 
+<!-- FULL PAGE LOADING OVERLAY -->
+<div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
+  <div class="loading-squares" aria-hidden="true">
+    <div class="sq-row">
+      <span class="sq"></span>
+      <span class="sq"></span>
+      <span class="sq"></span>
+      <span class="sq"></span>
+      <span class="sq"></span>
+    </div>
+    <span class="sq-fly"></span>
+  </div>
+
+  <div class="loading-copy">
+    <div id="loadingTitle" class="loading-title">Analyzing your bill</div>
+
+    <div id="loadingStep" class="loading-step">
+      Detecting text from your bill…
+    </div>
+
+    <div class="loading-progress-wrap">
+      <div class="loading-progress-track">
+        <div id="loadingProgress" class="loading-progress-bar"></div>
+      </div>
+      <div id="loadingEta" class="loading-eta">This might take ~25 seconds</div>
+    </div>
+
+    <div id="loadingHint" class="loading-hint">
+      Tip: We remove personal details before sending text to AI.
+    </div>
+    <div id="loadingFacts" class="loading-facts" aria-live="polite"></div>
+
+  </div>
+</div>
+
+
+
+
        <!-- TOTAL + EXPENSES -->
     <section class="card">
       <div class="label">Digit  Bill Amount</div>
+      <div class="sub">
+  Upload a bill (PDF or photo) to auto-fill total, period and fixed part.
+</div>
+
+<!-- BILL UPLOAD (custom UI) -->
+<div class="bill-upload">
+  <!-- Keep the SAME id="billUpload" so your JS keeps working -->
+  <input
+    id="billUpload"
+    class="bill-upload-input"
+    type="file"
+    accept="application/pdf,image/*"
+    multiple
+  />
+
+  <!-- This label becomes the “upload widget” -->
+  <label for="billUpload" class="upload-zone" id="uploadZone">
+    <div class="upload-hero" aria-hidden="true">
+      <div class="upload-doc">
+        <!-- simple “document stack” icon (SVG) -->
+        <svg viewBox="0 0 64 64" fill="none">
+          <path d="M14 18c0-3 2-5 5-5h18c3 0 5 2 5 5v26c0 3-2 5-5 5H19c-3 0-5-2-5-5V18Z" opacity="0.35" fill="currentColor"/>
+          <path d="M22 12c0-3 2-5 5-5h18c3 0 5 2 5 5v28c0 3-2 5-5 5H27c-3 0-5-2-5-5V12Z" opacity="0.20" fill="currentColor"/>
+          <path d="M24 20c0-3 2-5 5-5h16c3 0 5 2 5 5v26c0 3-2 5-5 5H29c-3 0-5-2-5-5V20Z" fill="currentColor"/>
+          <path d="M32 26h12" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.95"/>
+          <path d="M32 33h12" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.95"/>
+          <path d="M32 40h9" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.95"/>
+        </svg>
+      </div>
+
+      <div class="upload-plus">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 5v14M5 12h14" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="upload-copy">
+      <div class="upload-title">Upload your bill</div>
+      <div class="upload-sub" id="uploadSub">PDF recommended · or one/multiple screenshots</div>
+      <div class="upload-file" id="uploadFilename">No file selected</div>
+    </div>
+  </label>
+
+  <div id="scanStatus" class="sub" style="display:none;"></div>
+</div>
+
+
       <div id="totalSub" class="sub">
         In Free mode you can use only one expense. The total is still calculated from the expenses.
       </div>
@@ -1084,29 +1767,32 @@ body.pro-mode .install-hint strong {
   
 
    <!-- EXPENSE MODAL (PRO) -->
-  <div id="expModal" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <div id="modalTitle" class="modal-title"></div>
-        <button id="billHelpBtn" type="button" class="modal-help-btn">?</button>
-      </div>
+ <div id="expModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div id="modalTitle" class="modal-title"></div>
+      <button id="billHelpBtn" type="button" class="modal-help-btn">?</button>
+    </div>
 
-      <div class="modal-field">
-        <label>Total amount (€)</label>
-        <input id="expTotal" type="number" />
-      </div>
+    <div class="modal-field">
+      <label>Total amount (€)</label>
+      <input id="expTotal" type="number" />
+    </div>
 
-      <div class="modal-field">
-        <label>Fixed part (€) · optional</label>
-        <input id="expFixed" type="number" />
-      </div>
+    <div class="modal-field">
+      <label>Fixed part (€) · optional</label>
+      <input id="expFixed" type="number" />
+      
+      <div id="fixedDetails" class="fixed-details-list" style="display:none;"></div>
+    
+    </div>
 
-      <div class="modal-actions">
-        <button id="cancelModal" class="modal-btn cancel">Cancel</button>
-        <button id="saveModal" class="modal-btn save">Save</button>
-      </div>
+    <div class="modal-actions">
+      <button id="cancelModal" class="modal-btn cancel">Cancel</button>
+      <button id="saveModal" class="modal-btn save">Save</button>
     </div>
   </div>
+</div>
 
   <!-- BILL HELP OVERLAY -->
   <div id="billHelpOverlay" class="help-overlay">

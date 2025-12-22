@@ -1419,15 +1419,22 @@ body.pro-mode .loading-fact{
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 30px;              /* closer to bottom */
-  padding: 0 18px;
+
+  /* Move it UP (and respect iPhone safe area) */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);
+
+  /* More side padding (and safe area friendly) */
+  padding-left: max(28px, env(safe-area-inset-left));
+  padding-right: max(28px, env(safe-area-inset-right));
+
   display: flex;
   justify-content: center;
   pointer-events: none;
 }
 
+
 .loading-fact{
-  max-width: 520px;
+  max-width: 420px;
   text-align: center;
   font-size: 15px;
   line-height: 1.35;
@@ -1455,8 +1462,19 @@ body.pro-mode .loading-fact{
   .loading-eta{ font-size: 12px; }
   .loading-hint{ font-size: 12px; max-width: 320px; }
 
-  .loading-fact{ font-size: 14px; }
+  .loading-facts{
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 75px);
+    padding-left: max(22px, env(safe-area-inset-left));
+    padding-right: max(22px, env(safe-area-inset-right));
+  }
+
+  .loading-fact{
+    max-width: 320px;
+    line-height: 1.28;
+  }
 }
+
+
 
 
 /* ===========================

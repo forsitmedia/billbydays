@@ -555,6 +555,7 @@ function renderPerExpensePeriods() {
     applyToAllBtn.style.display = "none";
   }
 
+  // If 0 or 1 active expense → hide the list
   if (active.length <= 1) {
     perExpensePeriods.style.display = "none";
     perExpensePeriods.innerHTML = "";
@@ -564,28 +565,39 @@ function renderPerExpensePeriods() {
   perExpensePeriods.style.display = "flex";
   perExpensePeriods.innerHTML = "";
 
-  const firstActive = active[0];
+  const globalStartStr = finalStart ? formatShort(finalStart) : null;
+  const globalEndStr   = finalEnd   ? formatShort(finalEnd)   : null;
 
   active.forEach((exp) => {
     const row = document.createElement("div");
     row.className = "per-exp-row";
 
-    let subText;
+    // 1) Decide which dates to show for THIS expense
+    let startStr = null;
+    let endStr = null;
 
-    if (exp === firstActive) {
-      // First expense: always reflects the main period
-      if (finalStart && finalEnd) {
-        subText = `${formatShort(finalStart)} → ${formatShort(finalEnd)} (main period)`;
-      } else {
-        subText = "Tap to select main period";
-      }
+    if (exp.from && exp.to) {
+      // Has its own period (for example, scanned from its bill)
+      startStr = formatShort(exp.from);
+      endStr   = formatShort(exp.to);
+    } else if (globalStartStr && globalEndStr) {
+      // Fallback: no own period → show the global one
+      startStr = globalStartStr;
+      endStr   = globalEndStr;
+    }
+
+    // 2) Build the text
+    let subText;
+    if (startStr && endStr) {
+      const isMain =
+        globalStartStr &&
+        globalEndStr &&
+        startStr === globalStartStr &&
+        endStr === globalEndStr;
+
+      subText = `${startStr} → ${endStr}` + (isMain ? " (main period)" : "");
     } else {
-      // Other expenses
-      if (exp.from && exp.to) {
-        subText = `${formatShort(exp.from)} → ${formatShort(exp.to)}`;
-      } else {
-        subText = "Tap to select period";
-      }
+      subText = "Tap to select period";
     }
 
     row.innerHTML = `
@@ -596,12 +608,11 @@ function renderPerExpensePeriods() {
       </div>
     `;
 
-    // Click row → open calendar in expense mode
+    // 3) Clicking the row opens the calendar for THIS expense
     row.onclick = () => {
       calendarMode = "expense";
       calendarExpense = exp;
 
-      // Only pre-fill if this expense already has its own period
       if (exp.from && exp.to) {
         tempStart = new Date(exp.from);
         tempEnd = new Date(exp.to);
@@ -614,7 +625,6 @@ function renderPerExpensePeriods() {
       currentMonth = base.getMonth();
       currentYear = base.getFullYear();
 
-      // Show Copy main period if we have a global period
       if (finalStart && finalEnd) {
         calendarCopyMain.style.display = "inline-flex";
       } else {
@@ -628,6 +638,7 @@ function renderPerExpensePeriods() {
     perExpensePeriods.appendChild(row);
   });
 }
+
 
 
 

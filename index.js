@@ -1,7 +1,6 @@
 /* ============================================================
    INDEX.JS — FREE + PRO MODES
 ============================================================ */
-console.log("✅ NEW CODE LOADED (period fix test)");
 
 let isPro = false;
 
@@ -555,7 +554,6 @@ function renderPerExpensePeriods() {
     applyToAllBtn.style.display = "none";
   }
 
-  // If 0 or 1 active expense → hide the list
   if (active.length <= 1) {
     perExpensePeriods.style.display = "none";
     perExpensePeriods.innerHTML = "";
@@ -565,39 +563,28 @@ function renderPerExpensePeriods() {
   perExpensePeriods.style.display = "flex";
   perExpensePeriods.innerHTML = "";
 
-  const globalStartStr = finalStart ? formatShort(finalStart) : null;
-  const globalEndStr   = finalEnd   ? formatShort(finalEnd)   : null;
+  const firstActive = active[0];
 
   active.forEach((exp) => {
     const row = document.createElement("div");
     row.className = "per-exp-row";
 
-    // 1) Decide which dates to show for THIS expense
-    let startStr = null;
-    let endStr = null;
-
-    if (exp.from && exp.to) {
-      // Has its own period (for example, scanned from its bill)
-      startStr = formatShort(exp.from);
-      endStr   = formatShort(exp.to);
-    } else if (globalStartStr && globalEndStr) {
-      // Fallback: no own period → show the global one
-      startStr = globalStartStr;
-      endStr   = globalEndStr;
-    }
-
-    // 2) Build the text
     let subText;
-    if (startStr && endStr) {
-      const isMain =
-        globalStartStr &&
-        globalEndStr &&
-        startStr === globalStartStr &&
-        endStr === globalEndStr;
 
-      subText = `${startStr} → ${endStr}` + (isMain ? " (main period)" : "");
+    if (exp === firstActive) {
+      // First expense: always reflects the main period
+      if (finalStart && finalEnd) {
+        subText = `${formatShort(finalStart)} → ${formatShort(finalEnd)} (main period)`;
+      } else {
+        subText = "Tap to select main period";
+      }
     } else {
-      subText = "Tap to select period";
+      // Other expenses
+      if (exp.from && exp.to) {
+        subText = `${formatShort(exp.from)} → ${formatShort(exp.to)}`;
+      } else {
+        subText = "Tap to select period";
+      }
     }
 
     row.innerHTML = `
@@ -608,11 +595,12 @@ function renderPerExpensePeriods() {
       </div>
     `;
 
-    // 3) Clicking the row opens the calendar for THIS expense
+    // Click row → open calendar in expense mode
     row.onclick = () => {
       calendarMode = "expense";
       calendarExpense = exp;
 
+      // Only pre-fill if this expense already has its own period
       if (exp.from && exp.to) {
         tempStart = new Date(exp.from);
         tempEnd = new Date(exp.to);
@@ -625,6 +613,7 @@ function renderPerExpensePeriods() {
       currentMonth = base.getMonth();
       currentYear = base.getFullYear();
 
+      // Show Copy main period if we have a global period
       if (finalStart && finalEnd) {
         calendarCopyMain.style.display = "inline-flex";
       } else {
@@ -638,7 +627,6 @@ function renderPerExpensePeriods() {
     perExpensePeriods.appendChild(row);
   });
 }
-
 
 
 
@@ -752,23 +740,11 @@ resetBill.onclick = () => {
   expenses.forEach(e => {
     e.total = 0;
     e.fixed = 0;
-    e.fixedItems = [];
-    e.from = null;   // ✅ clear scanned dates
-    e.to = null;     // ✅ clear scanned dates
+    e.fixedItems = []; // ✅ also clear scanned breakdown
   });
-
-  finalStart = null; // ✅ clear global period
-  finalEnd = null;
-  tempStart = null;
-  tempEnd = null;
-
-  if (dateRangeMain) dateRangeMain.textContent = "";
-  if (dateRangeSub) dateRangeSub.textContent = "Tap to select start and end dates.";
-
   freeActiveExpenseId = null;
   renderExpenses();
   updateTotalBillFromExpenses();
-  renderPerExpensePeriods();
 };
 
 // ===== BILL HELP OVERLAY =====
@@ -1298,47 +1274,13 @@ const APP_VERSION = "1.0.0";
 
 function parsePTDate_DDMMYYYY(s) {
   if (!s) return null;
-
-  // Accept: "27-08-2025", "27/08/2025", "27.08.2025"
-  // Also tolerate leading/trailing spaces
-  const m = String(s).trim().match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})$/);
+  const m = String(s).match(/^(\d{2})-(\d{2})-(\d{4})$/);
   if (!m) return null;
-
-  const dd = Number(String(m[1]).padStart(2, "0"));
-  const mm = Number(String(m[2]).padStart(2, "0"));
-  let yyyy = String(m[3]);
-  if (yyyy.length === 2) yyyy = "20" + yyyy;
-
-  const d = new Date(Number(yyyy), mm - 1, dd);
+  const dd = Number(m[1]);
+  const mm = Number(m[2]);
+  const yyyy = Number(m[3]);
+  const d = new Date(yyyy, mm - 1, dd);
   return isNaN(d) ? null : d;
-}
-
-function recomputeGlobalPeriodFromExpenses() {
-  const ranges = expenses
-    .map(e => {
-      const s = e.from ? new Date(e.from) : null;
-      const t = e.to ? new Date(e.to) : null;
-      if (!s || !t) return null;
-      if (isNaN(s.getTime()) || isNaN(t.getTime())) return null;
-      return { s, t };
-    })
-    .filter(Boolean);
-
-  if (!ranges.length) return;
-
-  // global = extreme margins
-  const minStart = new Date(Math.min(...ranges.map(r => r.s.getTime())));
-  const maxEnd   = new Date(Math.max(...ranges.map(r => r.t.getTime())));
-
-  finalStart = minStart;
-  finalEnd = maxEnd;
-  tempStart = minStart;
-  tempEnd = maxEnd;
-
-  // Update the UI global display
-  dateRangeMain.textContent =
-    minStart.toLocaleDateString() + " → " + maxEnd.toLocaleDateString();
-  dateRangeSub.textContent = "Dates selected";
 }
 
 
@@ -1387,20 +1329,24 @@ const target =
   }
 
   // 2) BILL PERIOD
-if (extracted.periodStart && extracted.periodEnd) {
+ if (extracted.periodStart && extracted.periodEnd) {
   const s = parsePTDate_DDMMYYYY(extracted.periodStart);
   const e = parsePTDate_DDMMYYYY(extracted.periodEnd);
 
   if (s instanceof Date && !isNaN(s.getTime()) && e instanceof Date && !isNaN(e.getTime())) {
-    // ✅ 1) Store the scanned period INSIDE the correct expense (electricity/water/gas)
+    finalStart = s;
+    finalEnd = e;
+    tempStart = s;
+    tempEnd = e;
+
+    dateRangeMain.textContent =
+      s.toLocaleDateString() + " → " + e.toLocaleDateString();
+    dateRangeSub.textContent = "Dates selected";
+
     target.from = s.toISOString();
     target.to = e.toISOString();
-
-    // ✅ 2) Global/main period = extreme margins across all expense periods
-    recomputeGlobalPeriodFromExpenses();
   }
 }
-
 
 
   renderExpenses();

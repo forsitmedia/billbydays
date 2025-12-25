@@ -204,24 +204,65 @@ function parsePtDate(str) {
 }
 
 function extractBillingPeriod(text) {
-  const raw = String(text || "");
+  const rawOriginal = String(text || "");
 
-  // "Período de faturação: 27 ago 2025 até 26 out 2025"
-  let m = raw.match(/Per[ií]odo\s+de\s+fatura[cç][aã]o\s*:\s*([\s\S]{0,40}?)\s+(?:at[eé]|a)\s+([\s\S]{0,40}?)(?:\n|$)/i);
-  if (m) {
+  // Normalize to make matching robust:
+  // - remove accents (Período -> Periodo)
+  // - collapse multiple spaces/newlines into single space
+  const raw = rawOriginal
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Helper: try a regex that captures 2 date strings, return parsed DD-MM-YYYY
+  function tryMatch(rx) {
+    const m = raw.match(rx);
+    if (!m) return null;
+
     const a = parsePtDate(m[1]);
     const b = parsePtDate(m[2]);
-    return { periodStart: a, periodEnd: b };
+
+    if (a && b) return { periodStart: a, periodEnd: b };
+    return null;
   }
 
-  // "Período: 27/08/2025 a 26/10/2025"
-  m = raw.match(/Per[ií]odo\s*[:\-]\s*(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})\s*(?:a|at[eé])\s*(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})/i);
-  if (m) {
-    return { periodStart: parsePtDate(m[1]), periodEnd: parsePtDate(m[2]) };
-  }
+  // 1) Classic: "Periodo de faturacao: 27 ago 2025 ate 26 out 2025"
+  // NOTE: allow ":" OR no ":" because some bills omit it
+  let out = tryMatch(
+    /Periodo\s+de\s+fatura[cç]ao\s*:?\s*([\s\S]{0,40}?)\s+(?:ate|a)\s+([\s\S]{0,40}?)(?:\s|$)/i
+  );
+  if (out) return out;
+
+  // 2) Numeric: "Periodo: 27/08/2025 a 26/10/2025"
+  out = tryMatch(
+    /Periodo\s*[:\-]\s*(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})\s*(?:a|ate)\s*(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})/i
+  );
+  if (out) return out;
+
+  // 3) Your water bill style:
+  // "PERIODO FATURADO ... de 08-09-2025 a 09-10-2025"
+  out = tryMatch(
+    /Periodo\s+Faturado[\s\S]{0,160}?\bde\s*(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})\s*(?:a|ate)\s*(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})/i
+  );
+  if (out) return out;
+
+  // 4) Another common water layout:
+  // "Periodo de Faturacao 32 dias de 08-09-2025 a 09-10-2025"
+  out = tryMatch(
+    /Periodo\s+de\s+Faturac[aã]o[\s\S]{0,160}?\bde\s*(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})\s*(?:a|ate)\s*(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})/i
+  );
+  if (out) return out;
+
+  // 5) Last-resort: any "Periodo ... de DATE a DATE"
+  out = tryMatch(
+    /Periodo[\s\S]{0,80}?\bde\s*(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})\s*(?:a|ate)\s*(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})/i
+  );
+  if (out) return out;
 
   return { periodStart: null, periodEnd: null };
 }
+
 
 function detectUtilityType(text) {
   const t = String(text || "").toLowerCase();

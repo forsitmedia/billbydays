@@ -1,6 +1,7 @@
 /* ============================================================
    INDEX.JS — FREE + PRO MODES
 ============================================================ */
+console.log("✅ NEW CODE LOADED (period fix test)");
 
 let isPro = false;
 
@@ -740,11 +741,23 @@ resetBill.onclick = () => {
   expenses.forEach(e => {
     e.total = 0;
     e.fixed = 0;
-    e.fixedItems = []; // ✅ also clear scanned breakdown
+    e.fixedItems = [];
+    e.from = null;   // ✅ clear scanned dates
+    e.to = null;     // ✅ clear scanned dates
   });
+
+  finalStart = null; // ✅ clear global period
+  finalEnd = null;
+  tempStart = null;
+  tempEnd = null;
+
+  if (dateRangeMain) dateRangeMain.textContent = "";
+  if (dateRangeSub) dateRangeSub.textContent = "Tap to select start and end dates.";
+
   freeActiveExpenseId = null;
   renderExpenses();
   updateTotalBillFromExpenses();
+  renderPerExpensePeriods();
 };
 
 // ===== BILL HELP OVERLAY =====
@@ -1274,13 +1287,47 @@ const APP_VERSION = "1.0.0";
 
 function parsePTDate_DDMMYYYY(s) {
   if (!s) return null;
-  const m = String(s).match(/^(\d{2})-(\d{2})-(\d{4})$/);
+
+  // Accept: "27-08-2025", "27/08/2025", "27.08.2025"
+  // Also tolerate leading/trailing spaces
+  const m = String(s).trim().match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})$/);
   if (!m) return null;
-  const dd = Number(m[1]);
-  const mm = Number(m[2]);
-  const yyyy = Number(m[3]);
-  const d = new Date(yyyy, mm - 1, dd);
+
+  const dd = Number(String(m[1]).padStart(2, "0"));
+  const mm = Number(String(m[2]).padStart(2, "0"));
+  let yyyy = String(m[3]);
+  if (yyyy.length === 2) yyyy = "20" + yyyy;
+
+  const d = new Date(Number(yyyy), mm - 1, dd);
   return isNaN(d) ? null : d;
+}
+
+function recomputeGlobalPeriodFromExpenses() {
+  const ranges = expenses
+    .map(e => {
+      const s = e.from ? new Date(e.from) : null;
+      const t = e.to ? new Date(e.to) : null;
+      if (!s || !t) return null;
+      if (isNaN(s.getTime()) || isNaN(t.getTime())) return null;
+      return { s, t };
+    })
+    .filter(Boolean);
+
+  if (!ranges.length) return;
+
+  // global = extreme margins
+  const minStart = new Date(Math.min(...ranges.map(r => r.s.getTime())));
+  const maxEnd   = new Date(Math.max(...ranges.map(r => r.t.getTime())));
+
+  finalStart = minStart;
+  finalEnd = maxEnd;
+  tempStart = minStart;
+  tempEnd = maxEnd;
+
+  // Update the UI global display
+  dateRangeMain.textContent =
+    minStart.toLocaleDateString() + " → " + maxEnd.toLocaleDateString();
+  dateRangeSub.textContent = "Dates selected";
 }
 
 
@@ -1329,24 +1376,20 @@ const target =
   }
 
   // 2) BILL PERIOD
- if (extracted.periodStart && extracted.periodEnd) {
+if (extracted.periodStart && extracted.periodEnd) {
   const s = parsePTDate_DDMMYYYY(extracted.periodStart);
   const e = parsePTDate_DDMMYYYY(extracted.periodEnd);
 
   if (s instanceof Date && !isNaN(s.getTime()) && e instanceof Date && !isNaN(e.getTime())) {
-    finalStart = s;
-    finalEnd = e;
-    tempStart = s;
-    tempEnd = e;
-
-    dateRangeMain.textContent =
-      s.toLocaleDateString() + " → " + e.toLocaleDateString();
-    dateRangeSub.textContent = "Dates selected";
-
+    // ✅ 1) Store the scanned period INSIDE the correct expense (electricity/water/gas)
     target.from = s.toISOString();
     target.to = e.toISOString();
+
+    // ✅ 2) Global/main period = extreme margins across all expense periods
+    recomputeGlobalPeriodFromExpenses();
   }
 }
+
 
 
   renderExpenses();

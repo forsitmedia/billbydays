@@ -335,18 +335,30 @@ function redactForAI(rawText) {
   return t;
 }
 
-
 async function applyAiFixedCosts(extracted, text) {
   const util = detectUtilityType(text);
   extracted.utilityType = util.utility;
   extracted.utilityConfidence = util.confidence;
 
+  // 👉 If there's no DeepSeek API key, skip AI and just return what we already extracted
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) {
+    return extracted;
+  }
+
   // Only electricity + water prompts exist right now.
   const promptType = (util.utility === "water") ? "water" : "electricity";
 
   const safeText = redactForAI(text);
-const ai = await aiExtractFixedCostsFromText(safeText, promptType);
 
+  let ai;
+  try {
+    ai = await aiExtractFixedCostsFromText(safeText, promptType);
+  } catch (e) {
+    console.log("AI fixed-costs error:", e?.message || e);
+    // If AI fails for any reason, don't break the scan
+    return extracted;
+  }
 
   if (ai && ai.confidence >= 0.6 && Array.isArray(ai.fixedItems) && ai.fixedItems.length) {
     const fixedItemsGross = ai.fixedItems
@@ -363,7 +375,9 @@ const ai = await aiExtractFixedCostsFromText(safeText, promptType);
         };
       });
 
-    const fixedTotalGross = +fixedItemsGross.reduce((s, x) => s + (Number(x.amount) || 0), 0).toFixed(2);
+    const fixedTotalGross = +fixedItemsGross
+      .reduce((s, x) => s + (Number(x.amount) || 0), 0)
+      .toFixed(2);
 
     // Guardrail: don't allow fixed > total unless total missing
     if (!extracted.totalAmount || fixedTotalGross <= extracted.totalAmount + 0.01) {
@@ -375,6 +389,7 @@ const ai = await aiExtractFixedCostsFromText(safeText, promptType);
 
   return extracted;
 }
+
 
 // AI helper: extract fixed costs from bill text (Azure DI text)
 // ------------------------------

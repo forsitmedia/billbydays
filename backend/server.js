@@ -164,6 +164,15 @@ function isUsableText(text) {
 function parsePtDate(str) {
   const s = String(str || "").trim().toLowerCase();
 
+    // yyyy-mm-dd or yyyy/mm/dd or yyyy.mm.dd  (common in many Portuguese water bills)
+  let mi = s.match(/(20\d{2})[\/\.\-](\d{1,2})[\/\.\-](\d{1,2})/);
+  if (mi) {
+    const yy = mi[1];
+    const mm = String(mi[2]).padStart(2, "0");
+    const dd = String(mi[3]).padStart(2, "0");
+    return `${dd}-${mm}-${yy}`;
+  }
+
   // dd-mm-yyyy or dd/mm/yyyy or dd.mm.yyyy
   let m = s.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})/);
   if (m) {
@@ -206,22 +215,117 @@ function parsePtDate(str) {
 function extractBillingPeriod(text) {
   const raw = String(text || "");
 
+  // ==========================
+  // KEEP YOUR EXISTING RULES (unchanged)
+  // ==========================
+
   // "Período de faturação: 27 ago 2025 até 26 out 2025"
   let m = raw.match(/Per[ií]odo\s+de\s+fatura[cç][aã]o\s*:\s*([\s\S]{0,40}?)\s+(?:at[eé]|a)\s+([\s\S]{0,40}?)(?:\n|$)/i);
   if (m) {
     const a = parsePtDate(m[1]);
     const b = parsePtDate(m[2]);
-    return { periodStart: a, periodEnd: b };
+    if (a && b) return { periodStart: a, periodEnd: b };
   }
 
   // "Período: 27/08/2025 a 26/10/2025"
   m = raw.match(/Per[ií]odo\s*[:\-]\s*(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})\s*(?:a|at[eé])\s*(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})/i);
   if (m) {
-    return { periodStart: parsePtDate(m[1]), periodEnd: parsePtDate(m[2]) };
+    const a = parsePtDate(m[1]);
+    const b = parsePtDate(m[2]);
+    if (a && b) return { periodStart: a, periodEnd: b };
+  }
+
+  // ==========================
+  // NEW SAFE FALLBACKS (additive)
+  // ==========================
+
+  // normalize: remove accents + unify long dashes
+  const flat = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[–—]/g, "-");
+
+  const lower = flat.toLowerCase();
+
+  // helper: "dd-mm-yyyy" -> Date object for sanity check
+  function dmyToDate(dmy) {
+    const [dd, mm, yy] = String(dmy).split("-").map(Number);
+    return new Date(yy, mm - 1, dd);
+  }
+
+  // sanity: avoid absurd ranges + ensure start <= end
+  function plausibleRange(a, b) {
+    if (!a || !b) return false;
+    const da = dmyToDate(a);
+    const db = dmyToDate(b);
+    const diffDays = (db - da) / (1000 * 60 * 60 * 24);
+    return Number.isFinite(diffDays) && diffDays >= 0 && diffDays <= 400;
+  }
+
+  // avoid matching "Período de Comunicação" (common in water bills)
+  function looksLikeCommunication(labelText) {
+    return String(labelText || "").includes("comunic");
+  }
+
+  // detect a reasonable fallback year (for rare "15 ago a 14 set" without year)
+  let fallbackYear = null;
+  const yEmit = lower.match(/data\s+de\s+emiss[aã]o[^0-9]{0,30}(\d{4}[\/\.\-]\d{1,2}[\/\.\-]\d{1,2}|\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]20\d{2})/i);
+  if (yEmit) {
+    fallbackYear = (yEmit[1].match(/(20\d{2})/) || [])[1] || null;
+  }
+  if (!fallbackYear) {
+    const yAny = lower.match(/(20\d{2})/);
+    if (yAny) fallbackYear = yAny[1];
+  }
+
+  // supports:
+  // - 2024-11-18
+  // - 27/08/2025
+  // - 14 fev 2023
+  const DATE_ANY = "(?:20\\d{2}[\\/\\.\\-]\\d{1,2}[\\/\\.\\-]\\d{1,2}|\\d{1,2}[\\/\\.\\-]\\d{1,2}[\\/\\.\\-]\\d{2,4}|\\d{1,2}\\s+[a-z]{3,}\\s+20\\d{2})";
+
+  // 1) "Periodo de faturacao/facturacao/faturado: DATE a/ate DATE"
+  let r = new RegExp(`periodo\\s+(?:de\\s+)?(?:faturacao|facturacao|faturado)\\s*[:\\-]?\\s*(${DATE_ANY})\\s*(?:a|ate)\\s*(${DATE_ANY})`, "i");
+  let mm = lower.match(r);
+  if (mm && !looksLikeCommunication(mm[0])) {
+    const a = parsePtDate(mm[1]);
+    const b = parsePtDate(mm[2]);
+    if (plausibleRange(a, b)) return { periodStart: a, periodEnd: b };
+  }
+
+  // 2) "Periodo de faturacao/facturacao: DATE - DATE"  (ISO range)
+  r = new RegExp(`periodo\\s+(?:de\\s+)?(?:faturacao|facturacao|faturado)\\s*[:\\-]?\\s*(${DATE_ANY})\\s*\\-\\s*(${DATE_ANY})`, "i");
+  mm = lower.match(r);
+  if (mm && !looksLikeCommunication(mm[0])) {
+    const a = parsePtDate(mm[1]);
+    const b = parsePtDate(mm[2]);
+    if (plausibleRange(a, b)) return { periodStart: a, periodEnd: b };
+  }
+
+  // 3) "Periodo: DATE a/ate/- DATE"  (generic fallback)
+  r = new RegExp(`periodo\\s*[:\\-]\\s*(${DATE_ANY})\\s*(?:a|ate|\\-)\\s*(${DATE_ANY})`, "i");
+  mm = lower.match(r);
+  if (mm && !looksLikeCommunication(mm[0])) {
+    const a = parsePtDate(mm[1]);
+    const b = parsePtDate(mm[2]);
+    if (plausibleRange(a, b)) return { periodStart: a, periodEnd: b };
+  }
+
+  // 4) Rare: month names WITHOUT year, e.g. "15 ago a 14 set" → attach fallbackYear
+  if (fallbackYear) {
+    r = /periodo[\s\S]{0,40}?(\d{1,2})\s+([a-z]{3,})\s*(?:a|ate)\s*(\d{1,2})\s+([a-z]{3,})(?:\s+(20\d{2}))?/i;
+    mm = lower.match(r);
+    if (mm && !looksLikeCommunication(mm[0])) {
+      const yy = mm[5] || fallbackYear;
+      const a = parsePtDate(`${mm[1]} ${mm[2]} ${yy}`);
+      const b = parsePtDate(`${mm[3]} ${mm[4]} ${yy}`);
+      if (plausibleRange(a, b)) return { periodStart: a, periodEnd: b };
+    }
   }
 
   return { periodStart: null, periodEnd: null };
 }
+
 
 function detectUtilityType(text) {
   const t = String(text || "").toLowerCase();

@@ -33,6 +33,9 @@ if (savedTheme) {
 } else if (legacyMode) {
   isDark = legacyMode === "pro"; // old "pro" -> dark
 }
+// Cleanup legacy storage (keep the app fully theme-based)
+if (legacyMode) localStorage.removeItem("splitroomMode");
+
 
 function applyThemeUI() {
   if (isDark) document.body.classList.add("pro-mode");

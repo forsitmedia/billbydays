@@ -95,15 +95,85 @@
   color: var(--text-muted);
 }
 
-    .mode-pill {
-      font-size: 12px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      background: #f3f4f6;
-      color: #374151;
-      white-space: nowrap;
-    }
+    /* ============ THEME SWITCH (iOS style) ============ */
+.theme-switch{
+  --w: 98px;
+  --h: 46px;
+  position: relative;
+  width: var(--w);
+  height: var(--h);
+  display: inline-block;
+  cursor: pointer;
+  user-select: none;
+}
+
+.theme-switch input{
+  position:absolute;
+  opacity:0;
+  width:0;
+  height:0;
+}
+
+.theme-track{
+  position:absolute;
+  inset:0;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.85);
+  border:1px solid #e5e7eb;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.10);
+}
+
+body.pro-mode .theme-track{
+  background: rgba(17,24,39,0.65);
+  border-color:#334155;
+}
+
+.theme-track-icon{
+  position:absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.theme-track-icon.left{ left: 16px; }
+.theme-track-icon.right{ right: 16px; }
+
+body.pro-mode .theme-track-icon{
+  opacity: 0.65;
+}
+
+.theme-thumb{
+  position:absolute;
+  top:6px;
+  left:6px;
+  width:34px;
+  height:34px;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background:#0b5cff;
+  color:white;
+
+  box-shadow: 0 10px 18px rgba(11,92,255,0.35);
+  transition: transform .25s ease, background .25s ease, color .25s ease;
+}
+
+.theme-thumb-icon[data-icon="moon"]{ display:none; }
+
+.theme-switch input:checked + .theme-track .theme-thumb{
+  transform: translateX(calc(var(--w) - 34px - 12px));
+  background:#cbd5e1;
+  color:#111827;
+  box-shadow: 0 10px 18px rgba(0,0,0,0.20);
+}
+
+.theme-switch input:checked + .theme-track .theme-thumb .theme-thumb-icon[data-icon="sun"]{ display:none; }
+.theme-switch input:checked + .theme-track .theme-thumb .theme-thumb-icon[data-icon="moon"]{ display:inline; }
+
 
     .card {
       background: var(--card-bg);
@@ -1099,11 +1169,6 @@ body.pro-mode .footer-danger {
       color: #e5e7eb;
     }
 
-    body.pro-mode .mode-pill {
-      background: #1e1b4b;
-      border-color: #6366f1;
-      color: #e5e7eb;
-    }
 
     body.pro-mode .calendar-modal,
     body.pro-mode .calc-modal,
@@ -1897,7 +1962,19 @@ body.pro-mode .calc-step-text strong {
           <div class="subtitle">Step 3 · Final bill split</div>
         </div>
       </div>
-      <div id="modePill" class="mode-pill">Free mode · tap to simulate Pro</div>
+      <label id="modeSwitch" class="theme-switch" aria-label="Toggle dark mode">
+  <input id="themeToggle" type="checkbox" />
+  <span class="theme-track">
+    <span class="theme-track-icon left">☀︎</span>
+    <span class="theme-track-icon right">☾</span>
+
+    <span class="theme-thumb">
+      <span class="theme-thumb-icon" data-icon="sun">☀︎</span>
+      <span class="theme-thumb-icon" data-icon="moon">☾</span>
+    </span>
+  </span>
+</label>
+
     </header>
 
     <!-- SMALL SUMMARY CARD -->
@@ -2358,8 +2435,7 @@ body.pro-mode .calc-step-text strong {
   </div>
 </div>
 
-<!-- Upgrade toast -->
-<div id="upgradePopup" class="upgrade-popup">This is a Pro feature.</div>
+
 <!-- Required for PDF export -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

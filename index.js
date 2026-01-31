@@ -3,6 +3,9 @@
 ============================================================ */
 
 let isDark = false;
+// App is fully free now: keep all PRO functionality enabled
+const isPro = true;
+
 
 // DOM
 const modeSwitch = document.getElementById("modeSwitch");
@@ -274,8 +277,6 @@ let expenses = [
 let editingExpense = null;
 
 
-// 🔥 ADD THIS LINE HERE
-let freeActiveExpenseId = null;   // which emoji is allowed in Free mode
 
 // Roommates
 let roommates = [];
@@ -478,9 +479,6 @@ item.dataset.type = exp.id; // <-- IMPORTANT: lets spinner target the right card
   exp.fixed = 0;
   exp.fixedItems = []; // ✅ clear scanned breakdown
 
-  if (freeActiveExpenseId === exp.id) {
-    freeActiveExpenseId = null;
-  }
 
   renderExpenses();
   updateTotalBillFromExpenses();
@@ -672,10 +670,6 @@ saveModal.onclick = () => {
   editingExpense.total = t;
   editingExpense.fixed = f;
 
-  // 👇 Only now, after saving a valid amount, decide which emoji is the "free" one
-  if (!isPro) {
-    freeActiveExpenseId = editingExpense.id;
-  }
 
   expModal.style.display = "none";
   renderExpenses();
@@ -871,16 +865,12 @@ card.onclick = () => {
 
 renderRoommates();
 
-/* ======================
-   UPGRADE TOAST
-====================== */
 
 function showUpgrade() {
-  upgradePopup.style.display = "block";
-  setTimeout(() => {
-    upgradePopup.style.display = "none";
-  }, 1600);
+  // App is fully free now — no upgrade messaging
+  return;
 }
+
 
 /* ======================
    CALENDAR LOGIC
@@ -1254,10 +1244,6 @@ const target =
     
   }
 
-  // Free mode lock
-  if (!isPro) {
-    freeActiveExpenseId = target.id;
-  }
 
   // 2) BILL PERIOD
  if (extracted.periodStart && extracted.periodEnd) {
@@ -1300,7 +1286,8 @@ if (billUpload) {
     const imageFiles = files.filter((f) => !isPdf(f));
 
     // ✅ Pro feature: if 2+ PDFs are selected, treat each PDF as a separate bill
-    const multiPdfBills = isPro && pdfFiles.length >= 2;
+   const multiPdfBills = pdfFiles.length >= 2;
+
 
     // ------------------------------
     // Upload UI text (filename)
@@ -1319,7 +1306,7 @@ if (billUpload) {
 
     if (uploadSub) {
       if (multiPdfBills) {
-        uploadSub.textContent = `Pro: analyzing ${pdfFiles.length} PDFs (multiple bills)`;
+        uploadSub.textContent = `Analyzing ${pdfFiles.length} PDFs (multiple bills)`;
       } else if (!pdfFiles.length && imageFiles.length > 1) {
         uploadSub.textContent = "Multiple screenshots selected (treated as 1 multi-page bill)";
       } else {
@@ -1328,7 +1315,9 @@ if (billUpload) {
     }
 
     // Spinner should show on the "active" emoji in Free mode, otherwise default to electricity
-    const scanningId = freeActiveExpenseId || "electricity";
+
+    const scanningId = (expenses.find(e => (e.total || 0) > 0)?.id) || "electricity";
+
 
     // UI ON (full page loading)
     setContinueEnabled(false);

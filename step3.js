@@ -6,14 +6,20 @@ let billAmount = 0;
 let startDate = null;
 let endDate = null;
 let expenses = [];
-let mode = "free";
+let isDark = false;
 
 try {
   roommates = JSON.parse(localStorage.getItem("splitroomRoommates") || "[]");
   absencesRaw = JSON.parse(localStorage.getItem("splitroomAbsences") || "[]");
   billAmount = parseFloat(localStorage.getItem("splitroomBill") || "0");
   expenses = JSON.parse(localStorage.getItem("splitroomExpenses") || "[]");
-  mode = localStorage.getItem("splitroomMode") || "free";
+
+  // Theme: "light" or "dark" (legacy: splitroomMode free/pro)
+  const savedTheme = localStorage.getItem("splitroomTheme");
+  const legacyMode = localStorage.getItem("splitroomMode");
+  if (savedTheme) isDark = savedTheme === "dark";
+  else if (legacyMode) isDark = legacyMode === "pro";
+
 
   const startISO = localStorage.getItem("splitroomStart");
   const endISO = localStorage.getItem("splitroomEnd");
@@ -28,18 +34,6 @@ try {
 if (!roommates.length || !startDate || !endDate) {
   window.location.href = "index.html";
 }
-
-// Simple Pro upgrade toast (same as index)
-const upgradePopup = document.getElementById("upgradePopup");
-
-function showUpgrade() {
-  if (!upgradePopup) return;
-  upgradePopup.style.display = "block";
-  setTimeout(() => {
-    upgradePopup.style.display = "none";
-  }, 1600);
-}
-
 
 
 
@@ -235,7 +229,8 @@ const sumBillEl = document.getElementById("sumBill");
 const summaryRoommatesEl = document.getElementById("summaryRoommates");
 const summaryDaysEl = document.getElementById("summaryDays");
 const summaryPeriodEl = document.getElementById("summaryPeriod");
-const modePill = document.getElementById("modePill");
+const themeToggle = document.getElementById("themeToggle");
+
 
 sumBillEl.textContent = "€" + billAmount.toFixed(2);
 summaryRoommatesEl.textContent = roommates.length.toString();
@@ -243,13 +238,23 @@ summaryDaysEl.textContent = `${totalDays} day${totalDays !== 1 ? "s" : ""}`;
 summaryPeriodEl.textContent =
   startDate.toLocaleDateString() + " → " + endDate.toLocaleDateString();
 
-if (mode === "pro") {
-  document.body.classList.add("pro-mode");
-  modePill.textContent = "Pro mode";
-}  else {
-  document.body.classList.remove("pro-mode");
-  if (modePill) modePill.textContent = "Free mode";
+function applyThemeUI() {
+  if (isDark) document.body.classList.add("pro-mode");
+  else document.body.classList.remove("pro-mode");
+
+  if (themeToggle) themeToggle.checked = isDark;
 }
+
+if (themeToggle) {
+  themeToggle.addEventListener("change", () => {
+    isDark = themeToggle.checked;
+    localStorage.setItem("splitroomTheme", isDark ? "dark" : "light");
+    applyThemeUI();
+  });
+}
+
+applyThemeUI();
+
 
 /* ========= ROOMMATE CARDS ========= */
 
@@ -481,40 +486,20 @@ function renderStats() {
   statsCard.innerHTML = html;
 }
 
-// Start with stats hidden (for both modes)
-if (statsCard) {
-  statsCard.style.display = "none";
-} 
+// Start with stats hidden
+if (statsCard) statsCard.style.display = "none";
 
-// Render stats only for PRO
-if (mode === "pro") {
-  renderStats();
-}
+// Build the content once (available for everyone)
+renderStats();
 
-// Button is ALWAYS visible; behavior depends on mode
 if (toggleStatsBtn) {
-  if (mode !== "pro") {
-    // Optional: dim the button a bit for Free
-    toggleStatsBtn.classList.add("pro-locked");
-  }
-
   toggleStatsBtn.addEventListener("click", () => {
-    if (mode !== "pro") {
-      // FREE → show upgrade message instead of stats
-      if (typeof showUpgrade === "function") {
-        showUpgrade();
-      } else {
-        alert("This is a Pro feature.");
-      }
-      return;
-    }
-
-    // PRO → normal toggle
     const visible = statsCard.style.display === "block";
     statsCard.style.display = visible ? "none" : "block";
     toggleStatsBtn.textContent = visible ? "Show stats" : "Hide stats";
   });
 }
+
 
 /* ========= REPORT OVERLAY (PRO) ========= */
 
@@ -545,47 +530,14 @@ const reportHighlightLine2El = document.getElementById("reportHighlightLine2");
 
 // Open button behaviour
 if (openReportBtn) {
-  if (mode !== "pro") {
-    openReportBtn.classList.add("pro-locked");
-    openReportBtn.addEventListener("click", () => {
-      if (typeof showUpgrade === "function") {
-        showUpgrade();
-      } else {
-        alert("This is a Pro feature.");
-      }
-    });
-   } else {
-    openReportBtn.addEventListener("click", () => {
-      buildReportView();
-
-
-function updateKpiGauge(score) {
-  const needle = document.getElementById("kpiGaugeNeedle");
-  if (!needle) return;
-
-  const angle = -90 + (score / 100) * 180;
-  needle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
-
-  // update colour of progress bar
-  const scale = document.querySelector(".kpi-gauge-scale");
-  if (scale) {
-    scale.style.setProperty("--kpi-score", score);
-    scale.style.setProperty(
-      "--kpi-color",
-      score < 33 ? "#ef4444" : score < 67 ? "#facc15" : "#22c55e"
-    );
-  }
+  openReportBtn.addEventListener("click", () => {
+    buildReportView();
+    renderPortugalKpiCard();
+    reportOverlay.style.display = "flex";
+    setTimeout(renderReportCharts, 30);
+  });
 }
 
-
-
-      renderPortugalKpiCard();          // ← add this line
-      reportOverlay.style.display = "flex";
-
-      setTimeout(renderReportCharts, 30);
-    });
-  }
-}
 
 
 // Close overlay
@@ -1652,7 +1604,8 @@ async function exportReportPdf() {
   pdf.setTextColor(229, 231, 235);
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(10);
-  pdf.text("Pro mode", pillX + pillW / 2, pillY + 16, { align: "center" });
+  pdf.text(isDark ? "Dark mode" : "Light mode", pillX + pillW / 2, pillY + 16, { align: "center" });
+
 
   // =====================================================================
   // SECTION 1: BILL OVERVIEW
@@ -2533,28 +2486,16 @@ function buildPresenceCalendar() {
 const openCalendarBtn = document.getElementById("openCalendarBtn");
 
 if (openCalendarBtn) {
-  // Optional: make it look slightly dimmed for Free users
-  if (mode !== "pro") {
-    openCalendarBtn.classList.add("pro-locked"); // only if you added that CSS
-  }
-
   openCalendarBtn.addEventListener("click", () => {
-  if (mode !== "pro") {
-    // FREE → show Pro popup instead of opening calendar
-    if (typeof showUpgrade === "function") {
-      showUpgrade();
-    } else {
-      alert("This is a Pro feature.");
-    }
-    return;
-  }
+    buildPresenceCalendar();
+    calendarOverlay.style.display = "flex";
+  });
+}
+
 
   // PRO → open full calendar as usual
   buildPresenceCalendar();
   calendarOverlay.style.display = "flex";
-});
-}        
-
 
 if (calPrevBtn) {
   calPrevBtn.addEventListener("click", () => {
@@ -2875,22 +2816,7 @@ if (sendFeedbackBtn && sbClient) {
 const shareFriendsBtn = document.getElementById("shareFriendsBtn");
 
 if (shareFriendsBtn) {
-  if (mode !== "pro") {
-    // visually you can add .pro-locked class in CSS if you want
-    shareFriendsBtn.classList.add("pro-locked");
-  }
-
   shareFriendsBtn.addEventListener("click", async () => {
-    // Pro-only gate
-    if (mode !== "pro") {
-      if (typeof showUpgrade === "function") {
-        showUpgrade();
-      } else {
-        alert("This is a Pro feature.");
-      }
-      return;
-    }
-
     // Optionally open the report overlay so the user sees what's being exported
     const hadOverlayHidden = reportOverlay.style.display !== "flex";
     if (hadOverlayHidden) {
@@ -2907,12 +2833,9 @@ if (shareFriendsBtn) {
       reportOverlay.style.display = "none";
     }
 
-    // Tiny nudge so users know what to do next
     alert("PDF downloaded ✅.\nYou can now send it in WhatsApp or by email.");
   });
 }
-
-
 
 
 

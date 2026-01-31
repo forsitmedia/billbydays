@@ -1108,19 +1108,27 @@ let expensesToSave = expenses;
 let deferredPrompt = null;
 const installBtn = document.getElementById("installAppBtn");
 const installHint = document.getElementById("installHint");
+const installSection = document.getElementById("installSection");
+const classicLink = document.getElementById("classicLink");
+
 
 const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
 const isInStandalone =
   window.matchMedia("(display-mode: standalone)").matches ||
   window.navigator.standalone === true;
 
- 
+  // If the app is already installed/opened from Home Screen, hide install area
+if (isInStandalone) {
+  if (installSection) installSection.style.display = "none";
+}
 
+
+ 
 // Hide right after installation (Android + Desktop)
-window.addEventListener('appinstalled', () => {
-  const btn = document.getElementById("installAppBtn");
-  if (btn) btn.style.display = "none";
+window.addEventListener("appinstalled", () => {
+  if (installSection) installSection.style.display = "none";
 });
+
 
 
 // Chrome / Android: capture the real install prompt

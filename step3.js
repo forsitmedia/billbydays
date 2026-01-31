@@ -2300,6 +2300,14 @@ const dayInfoSplit = document.getElementById("dayInfoSplit");
 const calMonthLabel = document.getElementById("calMonthLabel");
 const calPrevBtn = document.getElementById("calPrevBtn");
 const calNextBtn = document.getElementById("calNextBtn");
+// Always start with calendar closed
+if (calendarOverlay) calendarOverlay.style.display = "none";
+
+window.addEventListener("pageshow", () => {
+  if (calendarOverlay) calendarOverlay.style.display = "none";
+});
+
+
 
 function showCalendarGrid() {
   presenceGrid.style.display = "grid";
@@ -2492,10 +2500,6 @@ if (openCalendarBtn) {
   });
 }
 
-
-  // PRO → open full calendar as usual
-  buildPresenceCalendar();
-  calendarOverlay.style.display = "flex";
 
 if (calPrevBtn) {
   calPrevBtn.addEventListener("click", () => {

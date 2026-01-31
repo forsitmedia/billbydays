@@ -2,10 +2,11 @@
    INDEX.JS — FREE + PRO MODES
 ============================================================ */
 
-let isPro = false;
+let isDark = false;
 
 // DOM
 const modeSwitch = document.getElementById("modeSwitch");
+const themeToggle = document.getElementById("themeToggle");
 const totalSub = document.getElementById("totalSub");
 const billTotalDisplay = document.getElementById("billTotalDisplay");
 const resetBill = document.getElementById("resetBill");
@@ -300,11 +301,18 @@ function formatShort(dateOrISO) {
 
 // Restore previous data if the user is coming back from Step 2/3
 (function restoreFromStorage() {
-  // Mode: "free" or "pro"
-  const savedMode = localStorage.getItem("splitroomMode");
-  if (savedMode) {
-    isPro = savedMode === "pro";
-  }
+ // Theme: "light" or "dark"
+const savedTheme = localStorage.getItem("splitroomTheme");
+
+// Backward compatibility (old users might still have splitroomMode)
+const legacyMode = localStorage.getItem("splitroomMode"); // "free" | "pro"
+
+if (savedTheme) {
+  isDark = savedTheme === "dark";
+} else if (legacyMode) {
+  isDark = legacyMode === "pro"; // old "pro" becomes dark theme
+}
+
 
   // Roommates list
   const savedRoommates = localStorage.getItem("splitroomRoommates");
@@ -382,61 +390,37 @@ ensureYouRoommate();
 
 
 /* ======================
-   MODE SWITCH
+   THEME SWITCH (Light / Dark)
 ====================== */
 
-function applyModeUI() {
-  // Switch theme
-  if (isPro) {
-    document.body.classList.add("pro-mode");
-
-    // Top-right button becomes "Back to Free"
-    modeSwitch.textContent = "Back to Free";
-    modeSwitch.classList.remove("try-pro");
-    modeSwitch.classList.add("back-free");
-
-    totalSub.textContent =
-      "Pro mode: add multiple expenses (electricity, water, gas, other). Total is calculated automatically.";
+function applyThemeUI() {
+  if (isDark) {
+    document.body.classList.add("pro-mode"); // dark theme
   } else {
-    document.body.classList.remove("pro-mode");
-
-    // Top-right button becomes "Try Pro"
-    modeSwitch.textContent = "Try Pro mode";
-    modeSwitch.classList.remove("back-free");
-    modeSwitch.classList.add("try-pro");
-
-    totalSub.textContent =
-      "Free mode: add only ONE expense. Want electricity + water + gas? Tap “Try Pro mode”.";
+    document.body.classList.remove("pro-mode"); // light theme
   }
 
-  // Re-render so locked visuals update immediately
+  // sync the checkbox UI
+  if (themeToggle) themeToggle.checked = isDark;
+
+  // Re-render so UI updates instantly
   renderExpenses();
   updateTotalBillFromExpenses();
 }
 
-// Click behavior (with a safe confirm when leaving Pro)
-modeSwitch.onclick = () => {
-  if (isPro) {
-    // If user already has multiple expenses, confirm before going back to Free
-    const activeCount = expenses.filter(e => (e.total || 0) > 0).length;
-    if (activeCount > 1) {
-      const ok = confirm(
-        "Free mode allows only ONE expense.\n\nIf you switch back to Free, only the first expense will be used when you continue.\n\nSwitch to Free anyway?"
-      );
-      if (!ok) return;
-    }
-  }
-
-  isPro = !isPro;
-
-  // Persist immediately so refresh keeps the same mode
-  localStorage.setItem("splitroomMode", isPro ? "pro" : "free");
-
-  applyModeUI();
-};
+// 🔥 THIS was missing: react to user toggling the switch
+if (themeToggle) {
+  themeToggle.addEventListener("change", () => {
+    isDark = themeToggle.checked;
+    localStorage.setItem("splitroomTheme", isDark ? "dark" : "light");
+    applyThemeUI();
+  });
+}
 
 // Run once on load
-applyModeUI();
+applyThemeUI();
+
+
 
 
 
@@ -466,11 +450,6 @@ item.className = "expense-item";
 item.dataset.type = exp.id; // <-- IMPORTANT: lets spinner target the right card
 
 
-// FREE mode: if one expense is already filled, visually lock the others
-const used = expenses.find(e => (e.total || 0) > 0);
-if (!isPro && used && exp.id !== used.id) {
-  item.classList.add("locked");
-}
 
  item.innerHTML = `
   ${exp.total > 0 ? '<div class="exp-reset">×</div>' : ''}
@@ -508,32 +487,9 @@ if (!isPro && used && exp.id !== used.id) {
 };
     }
 
-    // Click on the card
     item.onclick = () => {
-      if (!isPro) {
-        // Free mode:
-        // Allow opening the modal as long as no OTHER emoji already has a value
-        const anotherUsed = expenses.some(
-          (e) => e.id !== exp.id && e.total > 0
-        );
-
-        if (anotherUsed) {
-          // Another emoji already has a value -> Pro only
-          showUpgrade();
-          return;
-        }
-
-        // Either:
-        // - no expense has a value yet, or
-        // - only THIS emoji has a value
-        // → always allow opening the modal
-        openExpenseModal(exp);
-        return;
-      }
-
-      // Pro mode: all emojis are editable
-      openExpenseModal(exp);
-    };
+  openExpenseModal(exp);
+};
 
     expenseGrid.appendChild(item);
   });
@@ -885,18 +841,15 @@ function renderRoommates() {
 if (isYou) card.classList.add("rm-default");
 
 
-    // rename (Pro only)
-    card.onclick = () => {
-      if (!isPro) {
-        showUpgrade();
-        return;
-      }
-      const newName = prompt("Rename roommate", rm);
-      if (newName && newName.trim().length > 0) {
-        roommates[i] = newName.trim();
-        renderRoommates();
-      }
-    };
+    // rename (available for everyone)
+card.onclick = () => {
+  const newName = prompt("Rename roommate", rm);
+  if (newName && newName.trim().length > 0) {
+    roommates[i] = newName.trim();
+    renderRoommates();
+  }
+};
+
 
    if (!isYou) {
   const del = document.createElement("div");
@@ -1135,42 +1088,20 @@ continueBtn.onclick = () => {
     return;
   }
 
-  let billValue = 0;
-  let expensesToSave = [];
+let billValue = expenses.reduce((acc, e) => acc + (e.total || 0), 0);
 
-  if (isPro) {
-    billValue = expenses.reduce((acc, e) => acc + (e.total || 0), 0);
-    if (!billValue || billValue <= 0) {
-      alert("Add at least one expense total in Pro mode.");
-      return;
-    }
-    expensesToSave = expenses;
-  } else {
-  // FREE MODE:
-  // total comes from the expenses (but only ONE expense is allowed)
-  billValue = expenses.reduce((acc, e) => acc + (e.total || 0), 0);
-  const usedExpense = expenses.find(e => e.total > 0);
-
-  if (!billValue || billValue <= 0 || !usedExpense) {
-    alert("Add your bill amount using one of the icons.");
-    return;
-  }
-
-  // Save a single expense, keeping its name and icon
-  expensesToSave = [
-    {
-      id: usedExpense.id,
-      name: usedExpense.name,
-      icon: usedExpense.icon,
-      total: billValue,
-      fixed: usedExpense.fixed || 0
-    }
-  ];
+if (!billValue || billValue <= 0) {
+  alert("Add at least one expense amount.");
+  return;
 }
+
+// Save all expenses (some can be 0 — that’s fine)
+let expensesToSave = expenses;
+
 
 
   // Save in localStorage
-  localStorage.setItem("splitroomMode", isPro ? "pro" : "free");
+  localStorage.setItem("splitroomTheme", isDark ? "dark" : "light");
   localStorage.setItem("splitroomBill", String(billValue));
   localStorage.setItem("splitroomExpenses", JSON.stringify(expensesToSave));
   localStorage.setItem("splitroomRoommates", JSON.stringify(roommates));

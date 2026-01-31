@@ -21,15 +21,41 @@ const prevMonthBtn = document.getElementById("prevMonth");
 const nextMonthBtn = document.getElementById("nextMonth");
 const nextBtn = document.getElementById("nextBtn");
 
-// MODE (same key used in index & step3)
-const mode = localStorage.getItem("splitroomMode") || "free";
-// Show the pro-mode explanation text only in Pro mode
-const proExplain = document.getElementById("proPeriodExplanation");
-if (proExplain) {
-  proExplain.style.display = (mode === "pro") ? "block" : "none";
+// THEME (same key used in index)
+const themeToggle = document.getElementById("themeToggle");
+let isDark = false;
+
+const savedTheme = localStorage.getItem("splitroomTheme");
+const legacyMode = localStorage.getItem("splitroomMode"); // old free/pro
+
+if (savedTheme) {
+  isDark = savedTheme === "dark";
+} else if (legacyMode) {
+  isDark = legacyMode === "pro"; // old "pro" -> dark
 }
 
-const modePill = document.getElementById("modePill");
+function applyThemeUI() {
+  if (isDark) document.body.classList.add("pro-mode");
+  else document.body.classList.remove("pro-mode");
+
+  // keep toggle in sync
+  if (themeToggle) themeToggle.checked = isDark;
+
+  // this explanation is now for everyone
+  const proExplain = document.getElementById("proPeriodExplanation");
+  if (proExplain) proExplain.style.display = "block";
+}
+
+if (themeToggle) {
+  themeToggle.addEventListener("change", () => {
+    isDark = themeToggle.checked;
+    localStorage.setItem("splitroomTheme", isDark ? "dark" : "light");
+    applyThemeUI();
+  });
+}
+
+applyThemeUI();
+
 
 // DATA FROM STEP 1
 const roommates = JSON.parse(
@@ -45,14 +71,6 @@ if (!roommates.length || isNaN(start) || isNaN(end)) {
   window.location.href = "index.html";
 }
 
-// Apply mode styling (just like step3)
-if (mode === "pro") {
-  document.body.classList.add("pro-mode");
-  if (modePill) modePill.textContent = "Pro mode";
-} else {
-  if (modePill)
-    modePill.textContent = "Free mode";
-}
 
 /* ============================================================
    SUMMARY SETUP

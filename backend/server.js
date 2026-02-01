@@ -2,7 +2,7 @@
 
 require("dotenv").config();
 
-const { DocumentAnalysisClient, AzureKeyCredential } = require("@azure/ai-form-recognizer");
+const vision = require("@google-cloud/vision");
 
 
 const express = require("express");
@@ -17,86 +17,111 @@ const { createCanvas } = require("@napi-rs/canvas");
 const app = express();
 
 // ------------------------------
-// Azure Document Intelligence setup
+// Google Cloud Vision OCR setup
 // ------------------------------
-const AZURE_DI_ENDPOINT = process.env.AZURE_DI_ENDPOINT;
-const AZURE_DI_KEY = process.env.AZURE_DI_KEY;
+const GCP_VISION_KEY_JSON = process.env.GCP_VISION_KEY_JSON;
 
-const diClient =
-  AZURE_DI_ENDPOINT && AZURE_DI_KEY
-    ? new DocumentAnalysisClient(AZURE_DI_ENDPOINT, new AzureKeyCredential(AZURE_DI_KEY))
-    : null;
+let gcpVisionClient = null;
 
-async function analyzeWithAzureDI({ buffer, contentType, pages = "1-4" }) {
-  if (!diClient) {
-    throw new Error("Azure DI is not configured. Add AZURE_DI_ENDPOINT and AZURE_DI_KEY to .env");
-  }
-
-  const modelId = process.env.AZURE_MODEL_ID || "prebuilt-invoice";
-  let finalBuffer = buffer;
-  let finalContentType = contentType;
-
-  // --- 1. SAFETY CHECK: RESIZE IF TOO BIG (> 4MB) ---
-  const MAX_SIZE = 4 * 1024 * 1024; // 4MB
-  
-  if (buffer.length > MAX_SIZE) {
-    console.log(`⚠️ File is too big (${(buffer.length / 1024 / 1024).toFixed(2)} MB). Resizing for Free Tier...`);
-    
-    // If it's a PDF, we render Page 1 as a standard JPEG (smaller than PNG)
-    // If it's a PDF and too big, analyze ALL pages by rendering each page as a compact JPEG
-if (contentType === "application/pdf") {
-  const numPages = await getPdfNumPages(buffer);
-  console.log(`   -> PDF has ${numPages} pages. Running Azure DI on ALL pages (page-by-page)...`);
-
-  // We will merge the DI text from each page into one big text blob
-  let mergedContent = "";
-
-  for (let p = 1; p <= numPages; p++) {
-    console.log(`   -> Converting PDF Page ${p} to compact JPEG...`);
-
-    // Render page -> PNG -> compress to JPEG
-    let pagePng = await renderPdfPageToPngBuffer(buffer, p, 1.5);
-    let pageJpg = await sharp(pagePng).jpeg({ quality: 80 }).toBuffer();
-
-    console.log(`Analyzing document with model: ${modelId} (page ${p}/${numPages})...`);
-    const poller = await diClient.beginAnalyzeDocument(modelId, pageJpg, {
-      contentType: "image/jpeg",
+if (GCP_VISION_KEY_JSON) {
+  try {
+    const creds = JSON.parse(GCP_VISION_KEY_JSON);
+    gcpVisionClient = new vision.ImageAnnotatorClient({
+      credentials: creds,
+      projectId: creds.project_id,
     });
-    const result = await poller.pollUntilDone();
-
-    const pageText = result?.content ? String(result.content) : "";
-    mergedContent += `\n\n----- PAGE ${p} -----\n\n` + pageText;
+    console.log("✅ Google Vision OCR configured");
+  } catch (e) {
+    console.error("❌ Invalid GCP_VISION_KEY_JSON:", e?.message || e);
   }
-
-  // IMPORTANT: return early, because we already analyzed all pages
-  return { content: mergedContent.trim() };
 }
 
-    // If it's already an image, resize it
-    else if (String(contentType).startsWith("image/")) {
-      console.log("   -> Resizing image...");
-      finalBuffer = await sharp(buffer)
-        .resize({ width: 1800 }) 
-        .jpeg({ quality: 80 })
-        .toBuffer();
-      finalContentType = "image/jpeg";
+// Compatibility alias: your file still references diClient in other places
+const diClient = gcpVisionClient;
+
+
+// Helper: parse "1-4" or "all" or "1,3,5" into a page list
+function parsePagesList(pagesStr, maxPages) {
+  const p = String(pagesStr || "").trim().toLowerCase();
+  if (!p || p === "all") {
+    return Array.from({ length: maxPages }, (_, i) => i + 1);
+  }
+
+  // "a-b"
+  const m = p.match(/^(\d+)\s*-\s*(\d+)$/);
+  if (m) {
+    let a = Math.max(1, Math.min(parseInt(m[1], 10), maxPages));
+    let b = Math.max(1, Math.min(parseInt(m[2], 10), maxPages));
+    if (b < a) b = a;
+    const out = [];
+    for (let i = a; i <= b; i++) out.push(i);
+    return out;
+  }
+
+  // "1,3,5"
+  const parts = p
+    .split(",")
+    .map(x => parseInt(x.trim(), 10))
+    .filter(n => Number.isFinite(n))
+    .map(n => Math.max(1, Math.min(n, maxPages)));
+
+  return parts.length ? Array.from(new Set(parts)) : [1];
+}
+
+// Main OCR function using Google Vision.
+// - If PDF: render selected pages -> OCR each page as image
+// - If image: OCR directly
+async function analyzeWithGcpVision({ buffer, contentType, pages = "1-4" }) {
+  if (!gcpVisionClient) {
+    throw new Error(
+      "Google Vision is not configured. Add GCP_PROJECT_ID, GCP_CLIENT_EMAIL, GCP_PRIVATE_KEY to environment."
+    );
+  }
+
+  // PDF → render pages → OCR each page image
+  if (contentType === "application/pdf") {
+    const numPages = await getPdfNumPages(buffer);
+    const pageList = parsePagesList(pages, numPages);
+
+    let mergedText = "";
+
+    for (let i = 0; i < pageList.length; i++) {
+      const p = pageList[i];
+
+      // render page -> PNG -> compress to JPEG (faster + smaller)
+      const pagePng = await renderPdfPageToPngBuffer(buffer, p, 1.8);
+      const pageJpg = await sharp(pagePng).jpeg({ quality: 80 }).toBuffer();
+
+      const [result] = await gcpVisionClient.documentTextDetection({
+        image: { content: pageJpg },
+      });
+
+      const pageText =
+        result?.fullTextAnnotation?.text
+          ? String(result.fullTextAnnotation.text)
+          : "";
+
+      mergedText += `\n\n----- PAGE ${p} -----\n\n${pageText}`;
     }
+
+    return { content: mergedText.trim() };
   }
 
-  console.log(`Analyzing document with model: ${modelId} (${(finalBuffer.length/1024/1024).toFixed(2)} MB)...`);
+  // Image → OCR directly
+  const [result] = await gcpVisionClient.documentTextDetection({
+    image: { content: buffer },
+  });
 
-  // --- 2. SEND TO AZURE ---
-  try {
-    const poller = await diClient.beginAnalyzeDocument(modelId, finalBuffer, {
-      contentType: finalContentType,
-      // If we converted to JPEG, we can't ask for specific PDF pages anymore
-      pages: finalContentType === "application/pdf" ? pages : undefined, 
-    });
-    return await poller.pollUntilDone();
-  } catch (e) {
-    console.log("⚠️ AZURE ERROR DETAILS:", JSON.stringify(e, null, 2));
-    throw e;
-  }
+  const text =
+    result?.fullTextAnnotation?.text
+      ? String(result.fullTextAnnotation.text)
+      : "";
+
+  return { content: text.trim() };
+}
+// Compatibility wrapper: keep old function name used elsewhere
+async function analyzeWithAzureDI(opts) {
+  return analyzeWithGcpVision(opts);
 }
 
 

@@ -261,10 +261,9 @@ function extractBillingPeriod(text) {
   }
 
   // ==========================
-  // NEW SAFE FALLBACKS (additive)
+  // ROBUST PROVIDER-PROOF FALLBACKS
   // ==========================
 
-  // normalize: remove accents + unify long dashes
   const flat = raw
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -272,13 +271,11 @@ function extractBillingPeriod(text) {
 
   const lower = flat.toLowerCase();
 
-  // helper: "dd-mm-yyyy" -> Date object for sanity check
   function dmyToDate(dmy) {
     const [dd, mm, yy] = String(dmy).split("-").map(Number);
     return new Date(yy, mm - 1, dd);
   }
 
-  // sanity: avoid absurd ranges + ensure start <= end
   function plausibleRange(a, b) {
     if (!a || !b) return false;
     const da = dmyToDate(a);
@@ -287,17 +284,14 @@ function extractBillingPeriod(text) {
     return Number.isFinite(diffDays) && diffDays >= 0 && diffDays <= 400;
   }
 
-  // avoid matching "Período de Comunicação" (common in water bills)
   function looksLikeCommunication(labelText) {
     return String(labelText || "").includes("comunic");
   }
 
-  // detect a reasonable fallback year (for rare "15 ago a 14 set" without year)
+  // Try to discover a fallback year (used when bill says "15 ago a 14 set" without year)
   let fallbackYear = null;
   const yEmit = lower.match(/data\s+de\s+emiss[aã]o[^0-9]{0,30}(\d{4}[\/\.\-]\d{1,2}[\/\.\-]\d{1,2}|\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]20\d{2})/i);
-  if (yEmit) {
-    fallbackYear = (yEmit[1].match(/(20\d{2})/) || [])[1] || null;
-  }
+  if (yEmit) fallbackYear = (yEmit[1].match(/(20\d{2})/) || [])[1] || null;
   if (!fallbackYear) {
     const yAny = lower.match(/(20\d{2})/);
     if (yAny) fallbackYear = yAny[1];
@@ -307,49 +301,81 @@ function extractBillingPeriod(text) {
   // - 2024-11-18
   // - 27/08/2025
   // - 14 fev 2023
-  const DATE_ANY = "(?:20\\d{2}[\\/\\.\\-]\\d{1,2}[\\/\\.\\-]\\d{1,2}|\\d{1,2}[\\/\\.\\-]\\d{1,2}[\\/\\.\\-]\\d{2,4}|\\d{1,2}\\s+[a-z]{3,}\\s+20\\d{2})";
+  const DATE_ANY =
+    "(?:20\\d{2}[\\/\\.\\-]\\d{1,2}[\\/\\.\\-]\\d{1,2}|\\d{1,2}[\\/\\.\\-]\\d{1,2}[\\/\\.\\-]\\d{2,4}|\\d{1,2}\\s+[a-z]{3,}\\s+20\\d{2})";
 
-  // 1) "Periodo de faturacao/facturacao/faturado: DATE a/ate DATE"
-  let r = new RegExp(`periodo\\s+(?:de\\s+)?(?:faturacao|facturacao|faturado)\\s*[:\\-]?\\s*(${DATE_ANY})\\s*(?:a|ate)\\s*(${DATE_ANY})`, "i");
-  let mm = lower.match(r);
-  if (mm && !looksLikeCommunication(mm[0])) {
-    const a = parsePtDate(mm[1]);
-    const b = parsePtDate(mm[2]);
-    if (plausibleRange(a, b)) return { periodStart: a, periodEnd: b };
+  const candidates = [];
+
+  function addCandidate(aStr, bStr, label, baseScore) {
+    const a = parsePtDate(aStr);
+    const b = parsePtDate(bStr);
+    if (!plausibleRange(a, b)) return;
+
+    // score prefers ~30 day periods (typical billing cycles)
+    const da = dmyToDate(a);
+    const db = dmyToDate(b);
+    const diff = (db - da) / (1000 * 60 * 60 * 24);
+    const closeness = 30 - Math.abs(diff - 30); // higher is better
+    const score = baseScore + closeness;
+
+    candidates.push({ a, b, score, label });
   }
 
-  // 2) "Periodo de faturacao/facturacao: DATE - DATE"  (ISO range)
-  r = new RegExp(`periodo\\s+(?:de\\s+)?(?:faturacao|facturacao|faturado)\\s*[:\\-]?\\s*(${DATE_ANY})\\s*\\-\\s*(${DATE_ANY})`, "i");
-  mm = lower.match(r);
-  if (mm && !looksLikeCommunication(mm[0])) {
-    const a = parsePtDate(mm[1]);
-    const b = parsePtDate(mm[2]);
-    if (plausibleRange(a, b)) return { periodStart: a, periodEnd: b };
+  // A) Strongest: "periodo ... faturacao ... (32 dias de) DATE a/ate DATE"
+  let r = new RegExp(
+    `periodo\\s+(?:de\\s+)?(?:faturacao|facturacao|faturado)\\s*[:\\-]?\\s*(?:\\d{1,3}\\s*dias?\\s*)?(?:de\\s*)?(${DATE_ANY})\\s*(?:a|ate)\\s*(?:de\\s*)?(${DATE_ANY})`,
+    "ig"
+  );
+  for (const mm of lower.matchAll(r)) {
+    if (!looksLikeCommunication(mm[0])) addCandidate(mm[1], mm[2], mm[0], 100);
   }
 
-  // 3) "Periodo: DATE a/ate/- DATE"  (generic fallback)
-  r = new RegExp(`periodo\\s*[:\\-]\\s*(${DATE_ANY})\\s*(?:a|ate|\\-)\\s*(${DATE_ANY})`, "i");
-  mm = lower.match(r);
-  if (mm && !looksLikeCommunication(mm[0])) {
-    const a = parsePtDate(mm[1]);
-    const b = parsePtDate(mm[2]);
-    if (plausibleRange(a, b)) return { periodStart: a, periodEnd: b };
+  // B) ISO dash range: "periodo ... faturacao: DATE - DATE"
+  r = new RegExp(
+    `periodo\\s+(?:de\\s+)?(?:faturacao|facturacao|faturado)\\s*[:\\-]?\\s*(?:de\\s*)?(${DATE_ANY})\\s*\\-\\s*(?:de\\s*)?(${DATE_ANY})`,
+    "ig"
+  );
+  for (const mm of lower.matchAll(r)) {
+    if (!looksLikeCommunication(mm[0])) addCandidate(mm[1], mm[2], mm[0], 95);
   }
 
-  // 4) Rare: month names WITHOUT year, e.g. "15 ago a 14 set" → attach fallbackYear
+  // C) Generic "Periodo: DATE a/ate/- DATE"
+  r = new RegExp(`periodo\\s*[:\\-]\\s*(?:de\\s*)?(${DATE_ANY})\\s*(?:a|ate|\\-)\\s*(?:de\\s*)?(${DATE_ANY})`, "ig");
+  for (const mm of lower.matchAll(r)) {
+    if (!looksLikeCommunication(mm[0])) addCandidate(mm[1], mm[2], mm[0], 90);
+  }
+
+  // D) Tables: "Inicio ... Fim ..."
+  r = new RegExp(`(?:per\\.?\\s*)?inicio\\s*[:\\-]?\\s*(${DATE_ANY})[\\s\\S]{0,80}?(?:per\\.?\\s*)?fim\\s*[:\\-]?\\s*(${DATE_ANY})`, "ig");
+  for (const mm of lower.matchAll(r)) {
+    addCandidate(mm[1], mm[2], mm[0], 80);
+  }
+
+  // E) Line items: "Data: DATE a DATE" (with year)
+  r = new RegExp(`data\\s*[:\\-]?\\s*(${DATE_ANY})\\s*(?:a|ate|\\-)\\s*(${DATE_ANY})`, "ig");
+  for (const mm of lower.matchAll(r)) {
+    addCandidate(mm[1], mm[2], mm[0], 70);
+  }
+
+  // F) Rare: month names WITHOUT year, e.g. "Data: 15 ago a 14 set"
   if (fallbackYear) {
-    r = /periodo[\s\S]{0,40}?(\d{1,2})\s+([a-z]{3,})\s*(?:a|ate)\s*(\d{1,2})\s+([a-z]{3,})(?:\s+(20\d{2}))?/i;
-    mm = lower.match(r);
-    if (mm && !looksLikeCommunication(mm[0])) {
+    r = /data\s*[:\-]?\s*(\d{1,2})\s+([a-z]{3,})\s*(?:a|ate|\-)\s*(\d{1,2})\s+([a-z]{3,})(?:\s+(20\d{2}))?/ig;
+    for (const mm of lower.matchAll(r)) {
       const yy = mm[5] || fallbackYear;
-      const a = parsePtDate(`${mm[1]} ${mm[2]} ${yy}`);
-      const b = parsePtDate(`${mm[3]} ${mm[4]} ${yy}`);
-      if (plausibleRange(a, b)) return { periodStart: a, periodEnd: b };
+      const a = `${mm[1]} ${mm[2]} ${yy}`;
+      const b = `${mm[3]} ${mm[4]} ${yy}`;
+      addCandidate(a, b, mm[0], 60);
     }
+  }
+
+  if (candidates.length) {
+    candidates.sort((x, y) => y.score - x.score);
+    return { periodStart: candidates[0].a, periodEnd: candidates[0].b };
   }
 
   return { periodStart: null, periodEnd: null };
 }
+
 
 
 function detectUtilityType(text) {

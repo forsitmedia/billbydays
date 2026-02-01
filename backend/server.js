@@ -74,8 +74,8 @@ function parsePagesList(pagesStr, maxPages) {
 async function analyzeWithGcpVision({ buffer, contentType, pages = "1-4" }) {
   if (!gcpVisionClient) {
     throw new Error(
-      "Google Vision is not configured. Add GCP_PROJECT_ID, GCP_CLIENT_EMAIL, GCP_PRIVATE_KEY to environment."
-    );
+  "Google Vision is not configured. Add GCP_VISION_KEY_JSON to environment."
+);
   }
 
   // PDF → render pages → OCR each page image
@@ -1324,7 +1324,30 @@ app.post(
         }
 
         let extracted = extractBillFieldsFromText(text);
-        extracted = await applyAiFixedCosts(extracted, text);
+
+// ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
+const noai = String(req.query?.noai || "0") === "1";
+
+if (!noai) {
+  const AI_TIMEOUT_MS = 20000; // 20 seconds safety cap
+
+  try {
+    extracted = await Promise.race([
+      applyAiFixedCosts(extracted, text),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
+      ),
+    ]);
+  } catch (err) {
+    console.log("⚠️ AI skipped:", err?.message || err);
+    extracted.aiSkipped = true;
+    extracted.aiError = String(err?.message || err);
+  }
+} else {
+  console.log("⚡ Skipping AI fixed-costs because noai=1");
+}
+// ===== END APPLY AI FIXED COSTS =====
+
 
         return res.json({
           ok: true,
@@ -1403,7 +1426,30 @@ app.post(
       }
 
       let extracted = extractBillFieldsFromText(text);
-      extracted = await applyAiFixedCosts(extracted, text);
+
+// ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
+const noai = String(req.query?.noai || "0") === "1";
+
+if (!noai) {
+  const AI_TIMEOUT_MS = 20000; // 20 seconds safety cap
+
+  try {
+    extracted = await Promise.race([
+      applyAiFixedCosts(extracted, text),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
+      ),
+    ]);
+  } catch (err) {
+    console.log("⚠️ AI skipped:", err?.message || err);
+    extracted.aiSkipped = true;
+    extracted.aiError = String(err?.message || err);
+  }
+} else {
+  console.log("⚡ Skipping AI fixed-costs because noai=1");
+}
+// ===== END APPLY AI FIXED COSTS =====
+
 
       return res.json({
         ok: true,
@@ -1461,7 +1507,30 @@ app.post("/api/scan-bill", upload.single("file"), async (req, res) => {
     }
 
     let extracted = extractBillFieldsFromText(text);
-    extracted = await applyAiFixedCosts(extracted, text);
+
+// ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
+const noai = String(req.query?.noai || "0") === "1";
+
+if (!noai) {
+  const AI_TIMEOUT_MS = 20000; // 20 seconds safety cap
+
+  try {
+    extracted = await Promise.race([
+      applyAiFixedCosts(extracted, text),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
+      ),
+    ]);
+  } catch (err) {
+    console.log("⚠️ AI skipped:", err?.message || err);
+    extracted.aiSkipped = true;
+    extracted.aiError = String(err?.message || err);
+  }
+} else {
+  console.log("⚡ Skipping AI fixed-costs because noai=1");
+}
+// ===== END APPLY AI FIXED COSTS =====
+
     return res.json({ ok: true, extracted, ocrSource: "pdfjs" });
   } catch (err) {
     console.error("SERVER ERROR:", err);
@@ -1535,9 +1604,31 @@ if (isPdf) {
       });
     }
 
-    // Reuse your existing parser
     let extracted = extractBillFieldsFromText(text);
-    extracted = await applyAiFixedCosts(extracted, text);
+
+// ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
+const noai = String(req.query?.noai || "0") === "1";
+
+if (!noai) {
+  const AI_TIMEOUT_MS = 20000; // 20 seconds safety cap
+
+  try {
+    extracted = await Promise.race([
+      applyAiFixedCosts(extracted, text),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
+      ),
+    ]);
+  } catch (err) {
+    console.log("⚠️ AI skipped:", err?.message || err);
+    extracted.aiSkipped = true;
+    extracted.aiError = String(err?.message || err);
+  }
+} else {
+  console.log("⚡ Skipping AI fixed-costs because noai=1");
+}
+// ===== END APPLY AI FIXED COSTS =====
+
 
     return res.json({ ok: true, ocr: true, extracted, ocrSource: "tesseract" });
   } catch (err) {
@@ -1553,10 +1644,11 @@ app.post("/api/di-bill", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-    const pagesRaw = (req.query && req.query.pages) ? String(req.query.pages) : ((req.body && req.body.pages) ? String(req.body.pages) : "1-4");
+    const pagesRaw =
+      (req.query && req.query.pages)
+        ? String(req.query.pages)
+        : ((req.body && req.body.pages) ? String(req.body.pages) : "1-4");
     let pages = pagesRaw;
-
-
 
     const isPdf =
       req.file.mimetype === "application/pdf" ||
@@ -1576,78 +1668,68 @@ app.post("/api/di-bill", upload.single("file"), async (req, res) => {
       const numPages = await getPdfNumPages(req.file.buffer);
       pages = clampPages(pages, numPages) || `1-${numPages}`;
     } else {
-      pages = undefined;
+      pages = undefined; // images don't have pages
     }
 
+    console.log("VISION OCR UPLOAD:", req.file.originalname, contentType, req.file.size, "pages:", pages);
 
-    console.log("DI UPLOAD:", req.file.originalname, contentType, req.file.size, "pages:", pages);
-
-    const di = await analyzeWithAzureDI({
+    // Google Vision OCR (your wrapper is fine too, but this is clearer)
+    const di = await analyzeWithGcpVision({
       buffer: req.file.buffer,
       contentType,
       pages,
     });
 
-    // DI gives us strong extracted text:
     const diText = di?.content || "";
 
     if (process.env.LOG_FULL_TEXT === "1") {
-  console.log("===== FULL AZURE DI TEXT START =====");
-  console.log(diText);
-  console.log("===== FULL AZURE DI TEXT END =====");
-} else {
-  console.log("Azure DI text length:", String(diText || "").length);
-}
+      console.log("===== FULL VISION TEXT START =====");
+      console.log(diText);
+      console.log("===== FULL VISION TEXT END =====");
+    } else {
+      console.log("Vision text length:", String(diText || "").length);
+    }
 
-
-
-
-    // Reuse your existing parser (don’t rewrite everything):
+    // IMPORTANT: use let (we reassign after AI)
     let extracted = extractBillFieldsFromText(diText);
 
-    
+    // ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
+    const noai = String(req.query?.noai || "0") === "1";
 
-// ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
-const noai = String(req.query?.noai || "0") === "1";
-
-if (!noai) {
-  const AI_TIMEOUT_MS = 20000; // 20 seconds safety cap
-
-try {
-  extracted = await Promise.race([
-    applyAiFixedCosts(extracted, diText),
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
-    ),
-  ]);
-} catch (err) {
-  console.log("⚠️ AI skipped:", err?.message || err);
-  extracted.aiSkipped = true;
-  extracted.aiError = String(err?.message || err);
-}
-
-} else {
-  console.log("⚡ Skipping AI fixed-costs because noai=1");
-}
-// ===== END APPLY AI FIXED COSTS =====
-
-// ===== END APPLY AI FIXED COSTS =====
-
+    if (!noai) {
+      const AI_TIMEOUT_MS = 20000; // 20 seconds safety cap
+      try {
+        extracted = await Promise.race([
+          applyAiFixedCosts(extracted, diText),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
+          ),
+        ]);
+      } catch (err) {
+        console.log("⚠️ AI skipped:", err?.message || err);
+        extracted.aiSkipped = true;
+        extracted.aiError = String(err?.message || err);
+      }
+    } else {
+      console.log("⚡ Skipping AI fixed-costs because noai=1");
+    }
+    // ===== END APPLY AI FIXED COSTS =====
 
     return res.json({
       ok: true,
-      docai: "gpc-vision",
+      docai: "gcp-vision",
       extracted,
       evidence: {
         pages,
-        used: "prebuilt-invoice",
+        used: "gcp-vision-documentTextDetection",
       },
     });
   } catch (e) {
-    console.log("DI error:", e?.message || e);
-    return res.status(500).json({ error: e?.message || "Azure DI failed" });
+    console.log("Vision OCR error:", e?.message || e);
+    return res.status(500).json({ error: e?.message || "Vision OCR failed" });
   }
 });
+
 
 
 const PORT = process.env.PORT || 3000;

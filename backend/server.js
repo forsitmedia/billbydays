@@ -544,6 +544,353 @@ async function applyAiFixedCosts(extracted, text) {
 
   return extracted;
 }
+// ===============================
+// AI helper: BILLING PERIOD extractor + safety fallback (never null)
+// ===============================
+
+function getReqCountry(req) {
+  const c = String(req?.body?.country || req?.query?.country || "PT").toUpperCase().trim();
+  // keep short ISO-ish codes
+  if (!c || c.length > 8) return "PT";
+  return c;
+}
+
+function getPeriodKeywords(country = "PT") {
+  const c = String(country || "PT").toUpperCase();
+
+  // English-speaking
+  if (["US", "UK", "GB", "CA", "AU", "IE"].includes(c)) {
+    return [
+      "billing period", "service period", "statement period", "period covered",
+      "from", "to", "through", "thru", "until"
+    ];
+  }
+
+  // Spanish-speaking
+  if (["ES", "AR", "MX", "CL", "CO", "PE", "UY"].includes(c)) {
+    return [
+      "periodo", "período", "facturacion", "facturación", "consumo",
+      "servicio", "desde", "hasta"
+    ];
+  }
+
+  // Default Portuguese
+  return [
+    "periodo", "período", "faturacao", "faturação", "facturacao", "facturação",
+    "consumo", "servico", "serviço", "prestado"
+  ];
+}
+
+// small helpers for DD-MM-YYYY arithmetic
+function dmyToDate(dmy) {
+  const m = String(dmy || "").match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (!m) return null;
+  const dd = Number(m[1]), mm = Number(m[2]), yyyy = Number(m[3]);
+  const dt = new Date(Date.UTC(yyyy, mm - 1, dd));
+  return isNaN(dt) ? null : dt;
+}
+
+function dateToDmy(dt) {
+  if (!(dt instanceof Date) || isNaN(dt)) return null;
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const yyyy = String(dt.getUTCFullYear());
+  return `${dd}-${mm}-${yyyy}`;
+}
+
+function shiftDmy(dmy, deltaDays) {
+  const dt = dmyToDate(dmy);
+  if (!dt) return null;
+  dt.setUTCDate(dt.getUTCDate() + Number(deltaDays || 0));
+  return dateToDmy(dt);
+}
+
+// AI returns ISO most of the time
+function isoToDmy(iso) {
+  const s = String(iso || "").trim();
+  const m = s.match(/(20\d{2})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+  if (!m) return null;
+  const yyyy = m[1];
+  const mm = String(m[2]).padStart(2, "0");
+  const dd = String(m[3]).padStart(2, "0");
+  return `${dd}-${mm}-${yyyy}`;
+}
+
+// Build a small, relevant excerpt to send to AI (privacy-safe because we use redactForAI)
+function buildPeriodContextForAI(safeText, country = "PT") {
+  const t = String(safeText || "");
+  const lines = t.split("\n");
+
+  const kws = getPeriodKeywords(country).map(x => x.toLowerCase());
+  const dateRe = new RegExp(DATE_ANY, "i");
+
+  const out = [];
+  const push = (s) => { if (s && out[out.length - 1] !== s) out.push(s); };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = String(lines[i] || "");
+    const low = line.toLowerCase();
+
+    const hasKw = kws.some(k => low.includes(k));
+    const hasDate = dateRe.test(low);
+
+    if (hasKw || hasDate) {
+      // Avoid “periodo ideal de comunicacao de leituras” (NOT billing period)
+      if (/comunicac[aã]o\s+de\s+leituras?/i.test(low)) continue;
+
+      push(lines[i - 1] || "");
+      push(line);
+      push(lines[i + 1] || "");
+
+      if (out.length >= 120) break;
+    }
+  }
+
+  // cap size (token safety)
+  return out.filter(Boolean).join("\n").slice(0, 8000);
+}
+
+function guessBillingPeriodFromAnyDateRange(rawText) {
+  const raw = String(rawText || "");
+  const norm = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // remove accents
+  const flat = norm.replace(/\s+/g, " ").toLowerCase();
+
+  // fallbackYear = last 20xx we see
+  const years = Array.from(flat.matchAll(/\b(20\d{2})\b/g));
+  const fallbackYear = years.length ? years[years.length - 1][1] : null;
+
+  const tokenRe = new RegExp(DATE_ANY, "ig");
+  const tokens = [];
+  let m;
+  while ((m = tokenRe.exec(flat)) !== null) {
+    tokens.push({ raw: m[0], idx: m.index });
+    if (tokens.length > 80) break;
+  }
+  if (tokens.length < 2) return null;
+
+  const parsed = tokens
+    .map(t => {
+      const dmy = parsePtDate(t.raw, fallbackYear) || isoToDmy(t.raw);
+      return dmy ? { ...t, dmy } : null;
+    })
+    .filter(Boolean);
+
+  if (parsed.length < 2) return null;
+
+  let best = null;
+
+  for (let i = 0; i < parsed.length - 1; i++) {
+    for (let j = i + 1; j < Math.min(parsed.length, i + 6); j++) {
+      const a = parsed[i], b = parsed[j];
+      const between = flat.slice(a.idx, b.idx);
+      if (between.length > 220) continue;
+
+      // Must look like a range
+      if (!/(?:\ba\b|\bate\b|\bat[eé]\b|\bto\b|\buntil\b|\bthrough\b|\bthru\b|[-–—])/.test(between)) {
+        continue;
+      }
+
+      const da = dmyToDate(a.dmy);
+      const db = dmyToDate(b.dmy);
+      if (!da || !db) continue;
+
+      const days = Math.round((db - da) / 86400000);
+      if (days <= 0 || days > 400) continue;
+
+      const ctx = flat.slice(Math.max(0, a.idx - 80), Math.min(flat.length, b.idx + 80));
+
+      // exclude communication-of-readings period
+      if (/comunicac[aã]o\s+de\s+leituras?/.test(ctx)) continue;
+
+      let score = 0;
+      if (/periodo|faturac|facturac|consumo|servic|billing|statement|service\s+period/.test(ctx)) score += 6;
+      if (days >= 27 && days <= 35) score += 3;
+      else if (days >= 20 && days <= 45) score += 2;
+
+      if (!best || score > best.score) {
+        best = { start: a.dmy, end: b.dmy, score, source: "heuristic-date-range" };
+      }
+    }
+  }
+
+  return best ? { start: best.start, end: best.end, source: best.source } : null;
+}
+
+function ensureBillingPeriod(extracted, rawText) {
+  if (extracted?.periodStart && extracted?.periodEnd) return extracted;
+
+  // 1) try a generic date-range guess
+  const guess = guessBillingPeriodFromAnyDateRange(rawText);
+  if (guess?.start && guess?.end) {
+    extracted.periodStart = guess.start;
+    extracted.periodEnd = guess.end;
+    extracted.periodEstimated = true;
+    extracted.periodSource = guess.source;
+    return extracted;
+  }
+
+  // 2) fallback: billDate - 30 days
+  const end = extracted?.billDate || extracted?.dueDate || null;
+  if (end) {
+    const endDmy = parsePtDate(end) || end;
+    const startDmy = shiftDmy(endDmy, -30) || endDmy;
+    extracted.periodStart = startDmy;
+    extracted.periodEnd = endDmy;
+    extracted.periodEstimated = true;
+    extracted.periodSource = "fallback-30d";
+    return extracted;
+  }
+
+  // 3) last resort: today - 30 days
+  const todayEnd = dateToDmy(new Date());
+  extracted.periodEnd = todayEnd;
+  extracted.periodStart = shiftDmy(todayEnd, -30) || todayEnd;
+  extracted.periodEstimated = true;
+  extracted.periodSource = "today-30d";
+  return extracted;
+}
+
+async function aiExtractBillingPeriodFromText(diText, country = "PT") {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) throw new Error("Missing DEEPSEEK_API_KEY in .env");
+
+  const fetchFn =
+    (typeof fetch !== "undefined")
+      ? fetch
+      : (await import("node-fetch")).default;
+
+  const langHint =
+    (["US","UK","GB","CA","AU","IE"].includes(String(country).toUpperCase())) ? "English" :
+    (["ES","AR","MX","CL","CO","PE","UY"].includes(String(country).toUpperCase())) ? "Spanish" :
+    "Portuguese";
+
+  const prompt = `
+You are BillPeriodExtractor.
+Task: From OCR text of a utility bill, extract the BILLING/SERVICE PERIOD covered by the charges.
+
+Rules:
+- Return ONLY JSON.
+- Pick the date range that represents the billing period / service period / statement period.
+- Do NOT pick "periodo ideal de comunicacao de leituras" or anything about meter-reading submission windows.
+- Output dates as ISO YYYY-MM-DD.
+
+JSON schema:
+{
+  "periodStart": "YYYY-MM-DD",
+  "periodEnd": "YYYY-MM-DD",
+  "confidence": 0.0,
+  "evidence": "short exact line/snippet used"
+}
+
+Language hint: ${langHint}
+
+BILL TEXT:
+<<<
+${diText}
+>>>
+`.trim();
+
+  const resp = await fetchFn("https://api.deepseek.com/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "deepseek-chat",
+      temperature: 0,
+      messages: [
+        { role: "system", content: "Return valid JSON only. No markdown. No extra text." },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+
+  const data = await resp.json().catch(() => ({}));
+  const content = String(data?.choices?.[0]?.message?.content || "").trim();
+
+  // Extract the first {...} JSON object from response
+  const jsonStr = (content.match(/\{[\s\S]*\}/) || [null])[0];
+  if (!jsonStr) throw new Error("AI did not return JSON");
+
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    throw new Error("AI JSON parse failed");
+  }
+
+  return parsed || null;
+}
+
+async function applyAiBillingPeriod(extracted, text, country = "PT") {
+  // already have it
+  if (extracted?.periodStart && extracted?.periodEnd) return extracted;
+
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) return extracted;
+
+  const safeText = redactForAI(text);
+  const context = buildPeriodContextForAI(safeText, country);
+
+  if (!context || context.trim().length < 30) return extracted;
+
+  let ai;
+  try {
+    ai = await aiExtractBillingPeriodFromText(context, country);
+  } catch (e) {
+    console.log("AI billing-period error:", e?.message || e);
+    return extracted;
+  }
+
+  const startDmy = isoToDmy(ai?.periodStart) || parsePtDate(ai?.periodStart);
+  const endDmy = isoToDmy(ai?.periodEnd) || parsePtDate(ai?.periodEnd);
+
+  if (startDmy && endDmy) {
+    extracted.periodStart = startDmy;
+    extracted.periodEnd = endDmy;
+    extracted.periodAI = true;
+    extracted.periodConfidence = (typeof ai?.confidence === "number") ? ai.confidence : null;
+    extracted.periodEvidence = String(ai?.evidence || "");
+  }
+
+  return extracted;
+}
+
+// One helper you can call from ALL endpoints
+async function applyAiAndEnsurePeriod(extracted, billText, req) {
+  const country = getReqCountry(req);
+  extracted.country = country;
+
+  const noai = String(req.query?.noai || "0") === "1";
+
+  if (!noai) {
+    const AI_TIMEOUT_MS = 20000;
+
+    try {
+      extracted = await Promise.race([
+        (async () => {
+          extracted = await applyAiFixedCosts(extracted, billText);
+          extracted = await applyAiBillingPeriod(extracted, billText, country);
+          return extracted;
+        })(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
+        ),
+      ]);
+    } catch (err) {
+      console.log("⚠️ AI skipped:", err?.message || err);
+      extracted.aiSkipped = true;
+      extracted.aiError = String(err?.message || err);
+    }
+  } else {
+    console.log("⚡ Skipping AI because noai=1");
+  }
+
+  // ✅ GUARANTEE: never return null period
+  extracted = ensureBillingPeriod(extracted, billText);
+  return extracted;
+}
 
 
 // AI helper: extract fixed costs from bill text (Azure DI text)
@@ -1352,26 +1699,8 @@ app.post(
         let extracted = extractBillFieldsFromText(text);
 
 // ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
-const noai = String(req.query?.noai || "0") === "1";
+extracted = await applyAiAndEnsurePeriod(extracted, text, req);
 
-if (!noai) {
-  const AI_TIMEOUT_MS = 20000; // 20 seconds safety cap
-
-  try {
-    extracted = await Promise.race([
-      applyAiFixedCosts(extracted, text),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
-      ),
-    ]);
-  } catch (err) {
-    console.log("⚠️ AI skipped:", err?.message || err);
-    extracted.aiSkipped = true;
-    extracted.aiError = String(err?.message || err);
-  }
-} else {
-  console.log("⚡ Skipping AI fixed-costs because noai=1");
-}
 // ===== END APPLY AI FIXED COSTS =====
 
 
@@ -1454,26 +1783,7 @@ if (!noai) {
       let extracted = extractBillFieldsFromText(text);
 
 // ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
-const noai = String(req.query?.noai || "0") === "1";
-
-if (!noai) {
-  const AI_TIMEOUT_MS = 20000; // 20 seconds safety cap
-
-  try {
-    extracted = await Promise.race([
-      applyAiFixedCosts(extracted, text),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
-      ),
-    ]);
-  } catch (err) {
-    console.log("⚠️ AI skipped:", err?.message || err);
-    extracted.aiSkipped = true;
-    extracted.aiError = String(err?.message || err);
-  }
-} else {
-  console.log("⚡ Skipping AI fixed-costs because noai=1");
-}
+extracted = await applyAiAndEnsurePeriod(extracted, text, req);
 // ===== END APPLY AI FIXED COSTS =====
 
 
@@ -1535,26 +1845,7 @@ app.post("/api/scan-bill", upload.single("file"), async (req, res) => {
     let extracted = extractBillFieldsFromText(text);
 
 // ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
-const noai = String(req.query?.noai || "0") === "1";
-
-if (!noai) {
-  const AI_TIMEOUT_MS = 20000; // 20 seconds safety cap
-
-  try {
-    extracted = await Promise.race([
-      applyAiFixedCosts(extracted, text),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
-      ),
-    ]);
-  } catch (err) {
-    console.log("⚠️ AI skipped:", err?.message || err);
-    extracted.aiSkipped = true;
-    extracted.aiError = String(err?.message || err);
-  }
-} else {
-  console.log("⚡ Skipping AI fixed-costs because noai=1");
-}
+extracted = await applyAiAndEnsurePeriod(extracted, text, req);
 // ===== END APPLY AI FIXED COSTS =====
 
     return res.json({ ok: true, extracted, ocrSource: "pdfjs" });
@@ -1633,26 +1924,7 @@ if (isPdf) {
     let extracted = extractBillFieldsFromText(text);
 
 // ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
-const noai = String(req.query?.noai || "0") === "1";
-
-if (!noai) {
-  const AI_TIMEOUT_MS = 20000; // 20 seconds safety cap
-
-  try {
-    extracted = await Promise.race([
-      applyAiFixedCosts(extracted, text),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
-      ),
-    ]);
-  } catch (err) {
-    console.log("⚠️ AI skipped:", err?.message || err);
-    extracted.aiSkipped = true;
-    extracted.aiError = String(err?.message || err);
-  }
-} else {
-  console.log("⚡ Skipping AI fixed-costs because noai=1");
-}
+extracted = await applyAiAndEnsurePeriod(extracted, text, req);
 // ===== END APPLY AI FIXED COSTS =====
 
 
@@ -1720,25 +1992,8 @@ app.post("/api/di-bill", upload.single("file"), async (req, res) => {
     let extracted = extractBillFieldsFromText(diText);
 
     // ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
-    const noai = String(req.query?.noai || "0") === "1";
+  extracted = await applyAiAndEnsurePeriod(extracted, diText, req);
 
-    if (!noai) {
-      const AI_TIMEOUT_MS = 20000; // 20 seconds safety cap
-      try {
-        extracted = await Promise.race([
-          applyAiFixedCosts(extracted, diText),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
-          ),
-        ]);
-      } catch (err) {
-        console.log("⚠️ AI skipped:", err?.message || err);
-        extracted.aiSkipped = true;
-        extracted.aiError = String(err?.message || err);
-      }
-    } else {
-      console.log("⚡ Skipping AI fixed-costs because noai=1");
-    }
     // ===== END APPLY AI FIXED COSTS =====
 
     return res.json({

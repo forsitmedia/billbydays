@@ -1603,7 +1603,7 @@ app.post("/api/di-bill", upload.single("file"), async (req, res) => {
 
 
     // Reuse your existing parser (don’t rewrite everything):
-    const extracted = extractBillFieldsFromText(diText);
+    let extracted = extractBillFieldsFromText(diText);
 
     
 

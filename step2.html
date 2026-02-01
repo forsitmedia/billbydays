@@ -45,7 +45,7 @@
     }
 
     body {
-  background: var(--bg);
+  background: var(--page-bg);
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -374,11 +374,12 @@ body.pro-mode .theme-track-icon{
       font-size: 15px;
     }
 
-    /* =============== PRO THEME (same logic as index + step3) =============== */
+    /* =============== PRO THEME (same logic as Step 1) =============== */
 
-    body.pro-mode {
-      background: radial-gradient(circle at top, #4f46e5 0, #020617 55%);
-    }
+body.pro-mode {
+  background: #020617;
+}
+
 
     body.pro-mode .card {
       background: #020617;
@@ -470,6 +471,59 @@ body.pro-mode .theme-track-icon{
   justify-content: center;
   margin: 8px 0 10px;
 }
+
+/* ===========================
+   FULL-SCREEN BACKGROUND (iPhone safe areas)
+   Fixes white gaps (top/bottom) in dark mode
+=========================== */
+
+/* Base (light) page bg */
+:root{
+  --page-bg: var(--bg);
+
+  /* Safe-area backgrounds (default = same as page bg) */
+  --safe-top-bg: var(--page-bg);
+  --safe-bottom-bg: var(--page-bg);
+}
+
+/* Let the *page itself* use the same bg as body */
+html{
+  background: var(--page-bg);
+}
+
+/* Dark mode sets variables on <html> (not <body>) */
+html.pro-mode{
+  --page-bg: #020617;
+  --safe-top-bg: #020617;
+  --safe-bottom-bg: #020617;
+}
+
+/* Paint the safe-area TOP */
+body::before{
+  content:"";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--safe-top-bg);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* Paint the safe-area BOTTOM */
+body::after{
+  content:"";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: env(safe-area-inset-bottom, 0px);
+  background: var(--safe-bottom-bg);
+  z-index: 9999;
+  pointer-events: none;
+}
+
 
   </style>
 </head>

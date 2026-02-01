@@ -44,7 +44,7 @@
     }
 
    body {
-  background: var(--bg);
+  background: var(--page-bg);
   /* SAME padding as index.html (Step 1) */
   padding: calc(25px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px));
   display: flex;
@@ -1120,8 +1120,8 @@ body.pro-mode .footer-danger {
     /* PRO THEME (same palette as Step 1) */
 
     body.pro-mode {
-      background: radial-gradient(circle at top, #4f46e5 0, #020617 55%);
-    }
+  background: #020617;
+}
 
     body.pro-mode .card {
       background: #020617;
@@ -1947,6 +1947,43 @@ body.pro-mode .calc-step-text strong {
   z-index: 2100;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+}
+
+/* ===========================
+   FULL-SCREEN BACKGROUND (iPhone safe areas)
+=========================== */
+:root{
+  --page-bg: var(--bg);
+  --safe-top-bg: var(--page-bg);
+  --safe-bottom-bg: var(--page-bg);
+}
+
+html{ background: var(--page-bg); }
+
+html.pro-mode{
+  --page-bg: #020617;
+  --safe-top-bg: #020617;
+  --safe-bottom-bg: #020617;
+}
+
+body::before{
+  content:"";
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--safe-top-bg);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+body::after{
+  content:"";
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: env(safe-area-inset-bottom, 0px);
+  background: var(--safe-bottom-bg);
+  z-index: 9999;
+  pointer-events: none;
 }
 
   </style>

@@ -4,7 +4,11 @@
   <meta name="description" content="Split utility bills like electricity, water and gas consumption fairly, based on each roommate’s presence days. Simple, accurate, transparent bill splitting for shared homes.
   You were not at home, then you shouldn 't pay for that day." />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#eef1f5" id="themeColorMeta">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
 
   <!-- Canonical: consolidate homepage on "/" -->
   <link rel="canonical" href="https://billbydays.com/">
@@ -47,13 +51,17 @@
     }
 
     body {
-  background: var(--bg);
+  background: var(--page-bg);
   /* more top padding so header sits well below Dynamic Island */
   padding: calc(25px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: center;
+
+  /* iPhone Safari: use svh so it truly fills the visible screen */
   min-height: 100vh;
+  min-height: 100svh;
 }
+
 
 
     .app {
@@ -654,7 +662,7 @@ backdrop-filter: blur(8px);
 /* ============ PRO MODE THEME ============ */
 
 body.pro-mode {
-  background: radial-gradient(circle at top, #4f46e5 0, #020617 55%);
+  background:  #020617;
 }
 
 /* Cards + general text */
@@ -1597,7 +1605,65 @@ body.pro-mode .calendar-copy-main:hover{
   background: #0b1224;
 }
 
+/* ===========================
+   FULL-SCREEN BACKGROUND (iPhone safe areas)
+   Fixes white gaps (top/bottom) in dark mode
+=========================== */
 
+/* Default page bg (light) */
+:root{
+  --page-bg: #f7f8fb;
+
+  /* Safe-area backgrounds (default = same as page bg) */
+  --safe-top-bg: var(--page-bg);
+  --safe-bottom-bg: var(--page-bg);
+}
+
+
+/* Let the *page itself* use the same bg as body */
+html{
+  background: var(--page-bg);
+}
+
+/* Dark mode sets the page bg variable on <html>
+   (because <html> does NOT inherit from <body>) */
+html.pro-mode{
+  --page-bg: #020617;
+
+  /* Match your dark-mode header/background gradient at the TOP */
+  --safe-top-bg: radial-gradient(circle at top, #4f46e5 0, #020617 55%);
+
+  /* Keep bottom consistent (no purple band at the bottom) */
+  --safe-bottom-bg: #020617;
+}
+
+
+
+/* Paint the safe-area TOP */
+body::before{
+  content:"";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--safe-top-bg);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* Paint the safe-area BOTTOM (this is the one that often stays white) */
+body::after{
+  content:"";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: env(safe-area-inset-bottom, 0px);
+  background: var(--safe-bottom-bg);
+  z-index: 9999;
+  pointer-events: none;
+}
 
 
   </style>

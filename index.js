@@ -395,11 +395,9 @@ ensureYouRoommate();
 ====================== */
 
 function applyThemeUI() {
-  if (isDark) {
-    document.body.classList.add("pro-mode"); // dark theme
-  } else {
-    document.body.classList.remove("pro-mode"); // light theme
-  }
+  // ✅ apply to BOTH <body> and <html>
+  document.body.classList.toggle("pro-mode", isDark);
+  document.documentElement.classList.toggle("pro-mode", isDark);
 
   // sync the checkbox UI
   if (themeToggle) themeToggle.checked = isDark;
@@ -408,6 +406,7 @@ function applyThemeUI() {
   renderExpenses();
   updateTotalBillFromExpenses();
 }
+
 
 // 🔥 THIS was missing: react to user toggling the switch
 if (themeToggle) {

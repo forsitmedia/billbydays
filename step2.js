@@ -38,8 +38,9 @@ if (legacyMode) localStorage.removeItem("splitroomMode");
 
 
 function applyThemeUI() {
-  if (isDark) document.body.classList.add("pro-mode");
-  else document.body.classList.remove("pro-mode");
+  // ✅ apply to BOTH <body> and <html> (same as Step 1)
+  document.body.classList.toggle("pro-mode", isDark);
+  document.documentElement.classList.toggle("pro-mode", isDark);
 
   // keep toggle in sync
   if (themeToggle) themeToggle.checked = isDark;
@@ -48,6 +49,7 @@ function applyThemeUI() {
   const proExplain = document.getElementById("proPeriodExplanation");
   if (proExplain) proExplain.style.display = "block";
 }
+
 
 if (themeToggle) {
   themeToggle.addEventListener("change", () => {

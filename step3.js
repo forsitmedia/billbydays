@@ -239,11 +239,12 @@ summaryPeriodEl.textContent =
   startDate.toLocaleDateString() + " → " + endDate.toLocaleDateString();
 
 function applyThemeUI() {
-  if (isDark) document.body.classList.add("pro-mode");
-  else document.body.classList.remove("pro-mode");
+  document.body.classList.toggle("pro-mode", isDark);
+  document.documentElement.classList.toggle("pro-mode", isDark);
 
   if (themeToggle) themeToggle.checked = isDark;
 }
+
 
 if (themeToggle) {
   themeToggle.addEventListener("change", () => {

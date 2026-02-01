@@ -1611,7 +1611,21 @@ app.post("/api/di-bill", upload.single("file"), async (req, res) => {
 const noai = String(req.query?.noai || "0") === "1";
 
 if (!noai) {
-  extracted = await applyAiFixedCosts(extracted, diText);
+  const AI_TIMEOUT_MS = 20000; // 20 seconds safety cap
+
+try {
+  extracted = await Promise.race([
+    applyAiFixedCosts(extracted, diText),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS)
+    ),
+  ]);
+} catch (err) {
+  console.log("⚠️ AI skipped:", err?.message || err);
+  extracted.aiSkipped = true;
+  extracted.aiError = String(err?.message || err);
+}
+
 } else {
   console.log("⚡ Skipping AI fixed-costs because noai=1");
 }

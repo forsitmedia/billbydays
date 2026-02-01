@@ -1607,8 +1607,16 @@ app.post("/api/di-bill", upload.single("file"), async (req, res) => {
 
     
 
-    // ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
-extracted = await applyAiFixedCosts(extracted, diText);
+// ===== APPLY AI FIXED COSTS (NET + VAT -> GROSS) =====
+const noai = String(req.query?.noai || "0") === "1";
+
+if (!noai) {
+  extracted = await applyAiFixedCosts(extracted, diText);
+} else {
+  console.log("⚡ Skipping AI fixed-costs because noai=1");
+}
+// ===== END APPLY AI FIXED COSTS =====
+
 // ===== END APPLY AI FIXED COSTS =====
 
 

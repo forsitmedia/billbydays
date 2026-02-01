@@ -1636,7 +1636,7 @@ try {
 
     return res.json({
       ok: true,
-      docai: "azure",
+      docai: "gpc-vision",
       extracted,
       evidence: {
         pages,

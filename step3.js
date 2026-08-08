@@ -66,12 +66,7 @@ if (Array.isArray(expenses) && expenses.length) {
 
 /* ========= PRESENCE POINTS ========= */
 
-function dayKey(d) {
-  return d.toISOString().split("T")[0];
-}
-
-const msPerDay = 1000 * 60 * 60 * 24;
-const totalDays = Math.floor((endDate - startDate) / msPerDay) + 1;
+const totalDays = countDaysInclusive(startDate, endDate);
 
 const absences = roommates.map((_, i) => {
   const list = Array.isArray(absencesRaw[i]) ? absencesRaw[i] : [];
@@ -85,7 +80,7 @@ const daysAway = new Array(roommates.length).fill(0);
 let d = new Date(startDate);
 
 while (d <= endDate) {
-  const key = dayKey(d);
+  const key = toISO(d);
 
   const presentFlags = roommates.map((_, i) =>
     absences[i].has(key) ? 0 : 1
@@ -151,7 +146,7 @@ expenses.forEach((exp) => {
   let d = new Date(expStart);
 
   while (d <= expEnd) {
-    const key = dayKey(d);
+    const key = toISO(d);
 
     const presentFlags = roommates.map((_, i) =>
       absences[i].has(key) ? 0 : 1
@@ -2374,7 +2369,7 @@ function buildPresenceCalendar() {
     bars.className = "presence-bars";
 
     if (inRange) {
-      const key = dayKey(day);
+      const key = toISO(day);
       const presentFlags = roommates.map((_, i) =>
         absences[i].has(key) ? 0 : 1
       );

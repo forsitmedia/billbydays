@@ -84,8 +84,7 @@ if (!roommates.length || isNaN(start) || isNaN(end)) {
 sumBill.textContent = `€ ${bill}`;
 sumRmCount.textContent = roommates.length;
 
-const diff =
-  Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+const diff = countDaysInclusive(start, end);
 sumDays.textContent = `${diff} days`;
 
 sumPeriod.textContent = `${start.toLocaleString("default", {
@@ -269,10 +268,6 @@ function selectRange(date) {
 /* ============================================================
    HELPERS
    ============================================================ */
-
-function toISO(date) {
-  return date.toISOString().split("T")[0];
-}
 
 function isSameDate(a, b) {
   return (

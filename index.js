@@ -1411,7 +1411,7 @@ if (billUpload) {
 
     try {
       // ------------------------------
-      // PRO: multiple PDFs → multiple bills
+      // PRO: multiple PDFs → multiple 
       // ------------------------------
       if (multiPdfBills) {
         // if they also selected screenshots, ignore them here (can't reliably map screenshots to bills)

@@ -63,17 +63,46 @@ applyThemeUI();
 
 
 // DATA FROM STEP 1
+const ROOMMATES_DATA_VERSION = "2";
+
 const roommates = JSON.parse(
   localStorage.getItem("splitroomRoommates") || "[]"
 );
+const roommateIds = JSON.parse(
+  localStorage.getItem("splitroomRoommateIds") || "[]"
+);
+const roommatesVersion = localStorage.getItem("splitroomRoommatesVersion");
+
 const bill = localStorage.getItem("splitroomBill") || 0;
 
 const start = new Date(localStorage.getItem("splitroomStart"));
 const end = new Date(localStorage.getItem("splitroomEnd"));
 
-// If opened directly without Step 1 data, go back
-if (!roommates.length || isNaN(start) || isNaN(end)) {
-  window.location.href = "index.html";
+// Roommate ids must exist, match 1:1 with names, and come from the current
+// data version — otherwise two same-named roommates can't be told apart.
+const roommatesDataValid =
+  Array.isArray(roommates) &&
+  roommates.length > 0 &&
+  Array.isArray(roommateIds) &&
+  roommateIds.length === roommates.length &&
+  roommatesVersion === ROOMMATES_DATA_VERSION;
+
+// If opened directly without Step 1 data, or with old/mismatched roommate
+// data, send the user back to Step 1 instead of risking a wrong split.
+// location.replace() (not .href) avoids leaving a broken Step 2 entry in
+// history, and the throw stops this script immediately — .href alone does
+// not halt execution, so everything below would still run against
+// empty/mismatched data and throw its own, less clear error.
+if (!roommatesDataValid || isNaN(start) || isNaN(end)) {
+  if (roommates.length && !roommatesDataValid) {
+    localStorage.removeItem("splitroomRoommates");
+    localStorage.removeItem("splitroomRoommateIds");
+    localStorage.removeItem("splitroomRoommatesVersion");
+    localStorage.removeItem("splitroomAbsences");
+    alert("We've updated how roommates are tracked. Please re-enter your roommates to continue.");
+  }
+  window.location.replace("index.html");
+  throw new Error("Redirecting to Step 1: missing or invalid Step 1 data.");
 }
 
 
@@ -103,9 +132,10 @@ const colors = [
   "#eab308", // yellow
 ];
 
-// Selections: roommate -> Set of ISO strings (YYYY-MM-DD) = DAYS AWAY
+// Selections: roommate id -> Set of ISO strings (YYYY-MM-DD) = DAYS AWAY
+// Keyed by id (not name) so two roommates with the same name stay independent.
 let selections = {};
-roommates.forEach((rm) => (selections[rm] = new Set()));
+roommateIds.forEach((id) => (selections[id] = new Set()));
 
 // State
 let rmIndex = 0;
@@ -191,7 +221,7 @@ function renderCalendar(year, month) {
       div.style.cursor = "default";
     } else {
       // Selected (away)
-      if (selections[roommates[rmIndex]].has(iso)) {
+      if (selections[roommateIds[rmIndex]].has(iso)) {
         div.classList.add("selected");
         div.style.background = colors[rmIndex % colors.length];
         div.style.color = "white";
@@ -234,7 +264,7 @@ function attachDayLogic(div, date) {
 
 function toggleSingle(date) {
   const iso = toISO(date);
-  const set = selections[roommates[rmIndex]];
+  const set = selections[roommateIds[rmIndex]];
 
   if (set.has(iso)) set.delete(iso);
   else set.add(iso);
@@ -255,7 +285,7 @@ function selectRange(date) {
   pendingStart = null;
 
   let cursor = new Date(s);
-  const set = selections[roommates[rmIndex]];
+  const set = selections[roommateIds[rmIndex]];
 
   while (cursor <= e) {
     set.add(toISO(cursor));
@@ -283,7 +313,7 @@ function isSameDate(a, b) {
 
 function updateSummaryCount() {
   const rm = roommates[rmIndex];
-  const count = selections[rm].size;
+  const count = selections[roommateIds[rmIndex]].size;
 
   const isMe = (rm || "").trim().toLowerCase() === "me";
   const label = isMe ? "you" : rm;
@@ -352,9 +382,10 @@ nextBtn.onclick = () => {
     return;
   }
 
-  // Convert selections (Sets) into array-of-arrays (one per roommate)
-  const absencesArray = roommates.map((rm) =>
-    Array.from(selections[rm]) // list of YYYY-MM-DD strings (days AWAY)
+  // Convert selections (Sets) into array-of-arrays (one per roommate),
+  // in the same order as `roommates` — the format step3.js expects.
+  const absencesArray = roommateIds.map((id) =>
+    Array.from(selections[id]) // list of YYYY-MM-DD strings (days AWAY)
   );
 
   localStorage.setItem(
@@ -400,10 +431,8 @@ const resetBtn = document.getElementById("resetDaysBtn");
 
 if (resetBtn) {
   resetBtn.onclick = () => {
-    const rm = roommates[rmIndex];
-
     // Clear the Set of selected days for this roommate
-    selections[rm].clear();
+    selections[roommateIds[rmIndex]].clear();
 
     // Reset both month and year views
     currentMonth = start.getMonth();

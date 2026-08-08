@@ -279,6 +279,15 @@ let editingExpense = null;
 
 
 // Roommates
+// Each roommate is { id, name }. `id` is stable and never reused, even if
+// two roommates share the same display name.
+const ROOMMATES_DATA_VERSION = "2";
+function generateRoommateId() {
+  if (window.crypto && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "rm-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+}
 let roommates = [];
 
 // Calendar state
@@ -315,13 +324,23 @@ if (savedTheme) {
 }
 
 
-  // Roommates list
+  // Roommates list (stored as plain names; ids live in a parallel key)
   const savedRoommates = localStorage.getItem("splitroomRoommates");
   if (savedRoommates) {
     try {
-      const parsed = JSON.parse(savedRoommates);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        roommates = parsed;
+      const parsedNames = JSON.parse(savedRoommates);
+      if (Array.isArray(parsedNames) && parsedNames.length > 0) {
+        const savedVersion = localStorage.getItem("splitroomRoommatesVersion");
+        const savedIds = JSON.parse(localStorage.getItem("splitroomRoommateIds") || "null");
+        const idsUsable =
+          savedVersion === ROOMMATES_DATA_VERSION &&
+          Array.isArray(savedIds) &&
+          savedIds.length === parsedNames.length;
+
+        roommates = parsedNames.map((name, i) => ({
+          id: idsUsable ? savedIds[i] : generateRoommateId(),
+          name,
+        }));
       }
     } catch (e) {
       console.error("Error reading roommates from storage", e);
@@ -780,11 +799,11 @@ function isDefaultRoommateName(name) {
 // Renumber ONLY the default names so they stay Roommate 1, 2, 3… in order
 function renumberDefaultRoommates() {
   let index = 1;
-  roommates = roommates.map((name) => {
-    if (isDefaultRoommateName(name)) {
-      return `Roommate ${index++}`;
+  roommates = roommates.map((rm) => {
+    if (isDefaultRoommateName(rm.name)) {
+      return { ...rm, name: `Roommate ${index++}` };
     }
-    return name; // custom names (e.g. "Luna") stay untouched
+    return rm; // custom names (e.g. "Luna") stay untouched
   });
 }
 
@@ -792,13 +811,13 @@ function renumberDefaultRoommates() {
 function ensureYouRoommate() {
   // If empty, always create the first visible card
   if (!Array.isArray(roommates) || roommates.length === 0) {
-    roommates = ["Me"];
+    roommates = [{ id: generateRoommateId(), name: "Me" }];
     return;
   }
 
   // If "You" is missing (old sessions), add it at the beginning
-  const hasYou = roommates.some((n) => (n || "").trim().toLowerCase() === "me");
-  if (!hasYou) roommates.unshift("Me");
+  const hasYou = roommates.some((r) => (r.name || "").trim().toLowerCase() === "me");
+  if (!hasYou) roommates.unshift({ id: generateRoommateId(), name: "Me" });
 }
 
 
@@ -815,9 +834,9 @@ function renderRoommates() {
   add.onclick = () => {
   // Count only default "Roommate X" names, so "You" doesn't affect numbering
   const nextNum =
-    roommates.filter((n) => isDefaultRoommateName(n)).length + 1;
+    roommates.filter((r) => isDefaultRoommateName(r.name)).length + 1;
 
-  roommates.push(`Roommate ${nextNum}`);
+  roommates.push({ id: generateRoommateId(), name: `Roommate ${nextNum}` });
   renumberDefaultRoommates();
   renderRoommates();
 };
@@ -828,17 +847,17 @@ function renderRoommates() {
   roommates.forEach((rm, i) => {
     const card = document.createElement("div");
     card.className = "rm-card";
-    card.textContent = rm;
+    card.textContent = rm.name;
 
-    const isYou = (rm || "").trim().toLowerCase() === "me";
+    const isYou = (rm.name || "").trim().toLowerCase() === "me";
 if (isYou) card.classList.add("rm-default");
 
 
     // rename (available for everyone)
 card.onclick = () => {
-  const newName = prompt("Rename roommate", rm);
+  const newName = prompt("Rename roommate", rm.name);
   if (newName && newName.trim().length > 0) {
-    roommates[i] = newName.trim();
+    roommates[i] = { ...roommates[i], name: newName.trim() };
     renderRoommates();
   }
 };
@@ -1093,7 +1112,9 @@ let expensesToSave = expenses;
   localStorage.setItem("splitroomTheme", isDark ? "dark" : "light");
   localStorage.setItem("splitroomBill", String(billValue));
   localStorage.setItem("splitroomExpenses", JSON.stringify(expensesToSave));
-  localStorage.setItem("splitroomRoommates", JSON.stringify(roommates));
+  localStorage.setItem("splitroomRoommates", JSON.stringify(roommates.map((r) => r.name)));
+  localStorage.setItem("splitroomRoommateIds", JSON.stringify(roommates.map((r) => r.id)));
+  localStorage.setItem("splitroomRoommatesVersion", ROOMMATES_DATA_VERSION);
   localStorage.setItem("splitroomStart", finalStart.toISOString());
   localStorage.setItem("splitroomEnd", finalEnd.toISOString());
 

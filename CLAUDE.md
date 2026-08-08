@@ -39,6 +39,8 @@ happens on a branch and is merged only after being tested.
 | Key | Written by | Read by | Shape |
 |---|---|---|---|
 | `splitroomRoommates` | index.js | step2.js, step3.js | array of name strings |
+| `splitroomRoommateIds` | index.js | step2.js | array of stable roommate ids, same order/length as `splitroomRoommates` |
+| `splitroomRoommatesVersion` | index.js | step2.js | version string (currently `"2"`); step2.js clears roommate data and bounces to Step 1 if this doesn't match |
 | `splitroomAbsences` | step2.js | step3.js | array of arrays of "YYYY-MM-DD", indexed by roommate position |
 | `splitroomBill` | index.js | step2.js, step3.js | number |
 | `splitroomExpenses` | index.js | step3.js | array of {id, name, icon, total, fixed, from, to} |

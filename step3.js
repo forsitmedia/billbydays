@@ -2851,6 +2851,8 @@ document.getElementById("restartBtn").addEventListener("click", () => {
     localStorage.removeItem("splitroomStart");
     localStorage.removeItem("splitroomEnd");
     localStorage.removeItem("splitroomRoommates");
+    localStorage.removeItem("splitroomRoommateIds");
+    localStorage.removeItem("splitroomRoommatesVersion");
     localStorage.removeItem("splitroomAbsences");
     localStorage.removeItem("splitroomExpenses");
     localStorage.removeItem("splitroomMode");

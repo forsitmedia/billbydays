@@ -85,6 +85,8 @@ const roommatesDataValid =
   roommates.length > 0 &&
   Array.isArray(roommateIds) &&
   roommateIds.length === roommates.length &&
+  roommateIds.every((id) => typeof id === "string" && id.length > 0) &&
+  new Set(roommateIds).size === roommateIds.length &&
   roommatesVersion === ROOMMATES_DATA_VERSION;
 
 // If opened directly without Step 1 data, or with old/mismatched roommate

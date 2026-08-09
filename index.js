@@ -190,10 +190,11 @@ function hideFullLoading() {
 
 
 const API_BASE = "https://billbydays-backend.onrender.com";
-const SCAN_ENDPOINT = `${API_BASE}/api/scan-bill`;
-const DI_ENDPOINT = `${API_BASE}/api/di-bill?pages=1-4`;
-const OCR_ENDPOINT = `${API_BASE}/api/ocr-bill`;
-const ANALYZE_ENDPOINT = `${API_BASE}/api/analyze-bill`;
+
+// One endpoint, one model call. There is deliberately no fallback chain:
+// the old code tried four endpoints in sequence, which is why a scan used to
+// take about a minute.
+const EXTRACT_ENDPOINT = `${API_BASE}/api/extract-bill`;
 
 
 // ===============================
@@ -1221,64 +1222,64 @@ const APP_VERSION = "1.0.0";
 // helper for dates fortmat (last used in Step 2)
 
 
-function parsePTDate_DDMMYYYY(s) {
-  if (!s) return null;
-  const m = String(s).match(/^(\d{2})-(\d{2})-(\d{4})$/);
+// The extractor returns ISO "YYYY-MM-DD". Build the Date from the parts so it
+// lands on local midnight — new Date("2026-03-15") parses as UTC and can come
+// back as the 14th for anyone west of Greenwich.
+function parseISODateLocal(s) {
+  if (typeof s !== "string") return null;
+  const m = s.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!m) return null;
-  const dd = Number(m[1]);
-  const mm = Number(m[2]);
-  const yyyy = Number(m[3]);
-  const d = new Date(yyyy, mm - 1, dd);
-  return isNaN(d) ? null : d;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return isNaN(d.getTime()) ? null : d;
 }
 
 
 
 // Apply scanned bill data (from Step 1 PDF upload)
 
-function applyScannedBill(extracted) {
-  if (!extracted) return;
+// Applies whatever the extractor was confident about. Anything it returned as
+// null is left untouched — the backend only sends a number when it is sure, so
+// a null here means "ask the user", never "assume zero".
+// Returns the expense card the scan was applied to.
+function applyScannedBill(result) {
+  if (!result) return null;
 
-  // 1) TOTAL + FIXED → first usable expense
-  // 1) TOTAL + FIXED → route to the correct emoji when possible
-const type = String(extracted.utilityType || "").toLowerCase();
+  // Route to the matching emoji when we know the bill type.
+  const type = String(result.billType || "").toLowerCase();
 
-const preferredId =
-  type === "water" ? "water" :
-  type === "electricity" ? "electricity" :
-  type === "gas" ? "gas" :
-  null;
+  const preferredId =
+    type === "water" ? "water" :
+    type === "electricity" ? "electricity" :
+    type === "gas" ? "gas" :
+    null;
 
-const target =
-  (preferredId && expenses.find(e => e.id === preferredId)) ||
-  expenses.find(e => e.total === 0) ||
-  expenses[0];
+  const target =
+    (preferredId && expenses.find(e => e.id === preferredId)) ||
+    expenses.find(e => e.total === 0) ||
+    expenses[0];
 
+  // The extractor no longer returns a line-by-line breakdown, so make sure a
+  // breakdown from a previous scan doesn't stay attached to this card.
+  target.fixedItems = [];
 
-  if (typeof extracted.totalAmount === "number") {
-    target.total = extracted.totalAmount;
+  // 1) TOTAL
+  if (typeof result.total === "number") {
+    target.total = result.total;
   }
 
-  if (typeof extracted.fixedTotal === "number") {
-    target.fixed = Math.min(
-      extracted.fixedTotal,
-      extracted.totalAmount || extracted.fixedTotal
-    );
-
-    if (Array.isArray(extracted.fixedItems)) {
-    target.fixedItems = extracted.fixedItems;
+  // 2) FIXED PART
+  if (typeof result.fixedPart === "number") {
+    target.fixed =
+      typeof result.total === "number"
+        ? Math.min(result.fixedPart, result.total)
+        : result.fixedPart;
   }
 
-    
-  }
+  // 3) BILL PERIOD
+  const s = parseISODateLocal(result.periodStart);
+  const e = parseISODateLocal(result.periodEnd);
 
-
-  // 2) BILL PERIOD
- if (extracted.periodStart && extracted.periodEnd) {
-  const s = parsePTDate_DDMMYYYY(extracted.periodStart);
-  const e = parsePTDate_DDMMYYYY(extracted.periodEnd);
-
-  if (s instanceof Date && !isNaN(s.getTime()) && e instanceof Date && !isNaN(e.getTime())) {
+  if (s && e) {
     finalStart = s;
     finalEnd = e;
     tempStart = s;
@@ -1291,12 +1292,136 @@ const target =
     target.from = s.toISOString();
     target.to = e.toISOString();
   }
-}
-
 
   renderExpenses();
   updateTotalBillFromExpenses();
   renderPerExpensePeriods();
+
+  return target;
+}
+
+// ===============================
+// Scan report — what we could not read, and what to do about it
+// ===============================
+const scanReport = document.getElementById("scanReport");
+
+const SCAN_FIELD_LABELS = {
+  total: "Total amount",
+  fixedPart: "Fixed part",
+  period: "Billing period",
+  periodStart: "Billing period",
+  periodEnd: "Billing period",
+  file: "The bill",
+};
+
+function hideScanReport() {
+  if (scanReport) {
+    scanReport.hidden = true;
+    scanReport.innerHTML = "";
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+}
+
+function missingScanFields(result) {
+  const missing = [];
+  if (result.total === null) missing.push("total");
+  if (result.fixedPart === null) missing.push("fixedPart");
+  if (result.periodStart === null || result.periodEnd === null) missing.push("period");
+  return missing;
+}
+
+// One reason per field. "period" covers both dates, so match either.
+function scanReasonFor(result, field) {
+  const hit = (result.issues || []).find((i) => {
+    if (field === "period") return /^period/.test(String(i.field || ""));
+    return String(i.field || "") === field;
+  });
+  return hit && hit.reason ? hit.reason : "We could not read this from the bill.";
+}
+
+// Shows one row per field we could not fill in, each with the reason, plus two
+// equally-weighted next steps. Typing the values is a first-class path, not a
+// fallback — the user is never blocked from just entering three numbers.
+//
+// entries: [{ result, target, label }] — one per scanned bill.
+function renderScanReport(entries) {
+  if (!scanReport) return;
+
+  const incomplete = (entries || [])
+    .filter((e) => e && e.result)
+    .map((e) => Object.assign({}, e, { missing: missingScanFields(e.result) }))
+    .filter((e) => e.missing.length);
+
+  if (!incomplete.length) {
+    hideScanReport();
+    return;
+  }
+
+  const anythingFilled = (entries || []).some(
+    (e) => e && e.result && missingScanFields(e.result).length < 3
+  );
+
+  const sections = incomplete
+    .map((entry) => {
+      const rows = entry.missing
+        .map(
+          (field) => `
+          <li class="scan-issue">
+            <span class="scan-issue-field">${escapeHtml(SCAN_FIELD_LABELS[field] || field)}</span>
+            <span class="scan-issue-reason">${escapeHtml(scanReasonFor(entry.result, field))}</span>
+          </li>`
+        )
+        .join("");
+
+      const heading = entry.label
+        ? `<div class="scan-issue-bill">${escapeHtml(entry.label)}</div>`
+        : "";
+
+      return `${heading}<ul class="scan-issue-list">${rows}</ul>`;
+    })
+    .join("");
+
+  scanReport.innerHTML = `
+    <div class="scan-report-title">
+      ${anythingFilled
+        ? "We filled in what we could read."
+        : "We could not read this bill."}
+    </div>
+    ${sections}
+    <div class="scan-actions">
+      <button type="button" class="scan-action" id="scanRetake">Retake photo</button>
+      <button type="button" class="scan-action" id="scanManual">Enter manually</button>
+    </div>
+    <div class="scan-report-note">Both work equally well — typing the numbers takes a few seconds.</div>
+  `;
+  scanReport.hidden = false;
+
+  const retakeBtn = document.getElementById("scanRetake");
+  if (retakeBtn) {
+    retakeBtn.onclick = () => {
+      hideScanReport();
+      if (billUpload) billUpload.click();
+    };
+  }
+
+  const manualBtn = document.getElementById("scanManual");
+  if (manualBtn) {
+    manualBtn.onclick = () => {
+      const first = incomplete[0];
+      hideScanReport();
+      // Amounts live in the expense card; the period lives on the date picker.
+      if (first.missing.includes("total") || first.missing.includes("fixedPart")) {
+        openExpenseModal(first.target || expenses[0]);
+      } else if (dateRangeMain) {
+        dateRangeMain.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    };
+  }
 }
 
 // ===============================
@@ -1351,88 +1476,48 @@ if (billUpload) {
     setContinueEnabled(false);
     showFullLoading({
       theme: scanningId,
-      expectedMs: 60000 * (multiPdfBills ? pdfFiles.length : 1),
+      // One model call instead of four sequential OCR runs.
+      expectedMs: 15000 * (multiPdfBills ? pdfFiles.length : 1),
     });
 
     // hide error text while working
     if (scanStatus) scanStatus.style.display = "none";
+    hideScanReport();
 
     // ------------------------------
-    // Helper: analyze ONE bill
-    // - pdfFile: single PDF bill
-    // - screenshots: multiple images (pages) for ONE bill
+    // Analyze ONE bill — a single request, no fallback chain.
+    // - pdfFile: one PDF bill
+    // - screenshots: several images that are pages of ONE bill
+    // Returns the parsed result so the caller can report what was missed.
     // ------------------------------
     const analyzeOneBill = async ({ pdfFile, screenshots }) => {
-      // 0) Universal endpoint (works for PDFs + screenshots)
-      try {
-        const fd0 = new FormData();
-
-        if (pdfFile) {
-          fd0.append("file", pdfFile);
-        } else {
-          (screenshots || []).forEach((img) => fd0.append("files", img));
-        }
-
-        const res0 = await fetch(ANALYZE_ENDPOINT, { method: "POST", body: fd0 });
-        const data0 = await res0.json().catch(() => ({}));
-
-        if (res0.ok && data0 && data0.extracted) {
-          applyScannedBill(data0.extracted);
-          return;
-        }
-      } catch (e) {
-        // continue to PDF-only fallbacks below (if it's a PDF)
-      }
-
-      // If we only had screenshots and the universal endpoint failed, stop here.
-      if (!pdfFile) {
-        throw new Error("Could not scan the screenshots. Try clearer images or a PDF.");
-      }
-
-      // 1) PDF-only fallback chain (keeps your old behavior)
       const fd = new FormData();
-      fd.append("file", pdfFile);
 
-      // 1A) Try fast PDF text extraction first
-      const res = await fetch(SCAN_ENDPOINT, { method: "POST", body: fd });
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok && data && data.extracted) {
-        applyScannedBill(data.extracted);
-        return;
+      if (pdfFile) {
+        fd.append("file", pdfFile);
+      } else {
+        (screenshots || []).forEach((img) => fd.append("files", img));
       }
 
-      // 1B) If backend says "needsOCR", run Azure DI automatically
-      if (data && data.needsOCR) {
-        const fd2 = new FormData();
-        fd2.append("file", pdfFile);
+      const res = await fetch(EXTRACT_ENDPOINT, { method: "POST", body: fd });
 
-        const res2 = await fetch(DI_ENDPOINT, { method: "POST", body: fd2 });
-        const data2 = await res2.json().catch(() => ({}));
+      // The backend answers with the same JSON shape on success and on failure,
+      // so there is exactly one path to read here.
+      const result = await res.json().catch(() => null);
 
-        if (res2.ok && data2 && data2.extracted) {
-          applyScannedBill(data2.extracted);
-          return;
-        }
-
-        // 1C) Last fallback: Tesseract
-        const res3 = await fetch(OCR_ENDPOINT, { method: "POST", body: fd2 });
-        const data3 = await res3.json().catch(() => ({}));
-
-        if (res3.ok && data3 && data3.extracted) {
-          applyScannedBill(data3.extracted);
-          return;
-        }
-
-        throw new Error(data3.error || data2.error || "OCR failed.");
+      if (!result || typeof result !== "object") {
+        throw new Error("Could not scan the bill. Try a clearer photo, or enter the values yourself.");
       }
 
-      throw new Error(data.error || "Scan failed.");
+      const target = applyScannedBill(result);
+      return { result, target };
     };
+
+    const outcomes = [];
 
     try {
       // ------------------------------
-      // PRO: multiple PDFs → multiple 
+      // PRO: multiple PDFs → multiple bills
       // ------------------------------
       if (multiPdfBills) {
         // if they also selected screenshots, ignore them here (can't reliably map screenshots to bills)
@@ -1440,20 +1525,24 @@ if (billUpload) {
           if (loadingTitle) {
             loadingTitle.textContent = `Analyzing bill ${i + 1} of ${pdfFiles.length}`;
           }
-          await analyzeOneBill({ pdfFile: pdfFiles[i], screenshots: [] });
+          const outcome = await analyzeOneBill({ pdfFile: pdfFiles[i], screenshots: [] });
+          outcomes.push(Object.assign({ label: pdfFiles[i].name || `Bill ${i + 1}` }, outcome));
         }
       } else {
         // ------------------------------
         // Default: ONE bill
         // Priority:
         //  - If there is a PDF, use the first PDF and ignore images
-        //  - Otherwise, treat ALL selected images as screenshots for ONE bill
+        //  - Otherwise, treat ALL selected images as pages of ONE bill
         // ------------------------------
         const pdfFile = pdfFiles[0] || null;
         const screenshots = pdfFile ? [] : imageFiles;
 
-        await analyzeOneBill({ pdfFile, screenshots });
+        outcomes.push(await analyzeOneBill({ pdfFile, screenshots }));
       }
+
+      // Tell the user exactly which fields we could not read, and why.
+      renderScanReport(outcomes);
     } catch (err) {
       console.error(err);
 

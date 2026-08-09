@@ -1652,6 +1652,109 @@ body::before{
   pointer-events: none;
 }
 
+/* ===============================
+   SCAN REPORT — which fields the scan could not read, and what to do
+   =============================== */
+.scan-report{
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card-bg);
+  text-align: left;
+}
+
+.scan-report[hidden]{ display: none; }
+
+.scan-report-title{
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 10px;
+}
+
+.scan-issue-bill{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 8px 0 4px;
+}
+
+.scan-issue-list{
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.scan-issue{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+
+.scan-issue:first-child{ border-top: none; }
+
+.scan-issue-field{
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.scan-issue-reason{
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+/* Two equal options. Neither is styled as the "real" one — typing the
+   numbers is a first-class path, not a fallback. */
+.scan-actions{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.scan-action{
+  appearance: none;
+  width: 100%;
+  padding: 11px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.scan-action:active{ transform: scale(0.98); }
+
+.scan-report-note{
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Pro mode (dark) */
+body.pro-mode .scan-report{
+  background: #020617;
+  border-color: #1f2937;
+}
+body.pro-mode .scan-report-title{ color: #e5e7eb; }
+body.pro-mode .scan-issue{ border-top-color: #1f2937; }
+body.pro-mode .scan-issue-field{ color: #e5e7eb; }
+body.pro-mode .scan-issue-reason,
+body.pro-mode .scan-issue-bill,
+body.pro-mode .scan-report-note{ color: #9ca3af; }
+body.pro-mode .scan-action{
+  background: #0b1224;
+  border-color: #1f2937;
+  color: #e5e7eb;
+}
+
 /* Paint the safe-area BOTTOM (this is the one that often stays white) */
 body::after{
   content:"";
@@ -1748,7 +1851,7 @@ body::after{
     id="billUpload"
     class="bill-upload-input"
     type="file"
-    accept="application/pdf,image/*"
+    accept="application/pdf,image/jpeg,image/png,image/heic,image/heif"
     multiple
   />
 
@@ -1782,6 +1885,9 @@ body::after{
   </label>
 
   <div id="scanStatus" class="sub" style="display:none;"></div>
+
+  <!-- Filled in by renderScanReport() when the scan could not read a field -->
+  <div id="scanReport" class="scan-report" hidden></div>
 </div>
 
 

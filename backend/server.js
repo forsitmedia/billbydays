@@ -31,7 +31,7 @@ const app = express();
 // confidence sits under CONFIDENCE_FLOOR), "gemini-3.6-flash" is a drop-in
 // upgrade — more accurate on dense invoice tables, costs more per scan.
 // Changing this one string is the whole migration.
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const GEMINI_TIMEOUT_MS = 45000;
@@ -162,8 +162,15 @@ WATER / SANITATION / WASTE — count these as fixed:
 - "Tarifa Fixa", "Tarifa Fixa Água", "TRF FIXA", "Quota", "Quota de Serviço"
 - "Tarifa de Disponibilidade", "Tarifa Disponibilidade", "Tar. Disp.", "Disponibilidade"
 - "Saneamento Fixo", "Tarifa Fixa Saneamento", "TRF FIXA SANEAM", "Disp Saneamento"
-- "RSU Fixo", "RSU Fixa", "Resíduos Sólidos Urbanos Fixos", "Tarifa Fixa Resíduos",
-  "Tar. Disp. RU", "TRF FIXA GESTÃO RES. URB"
+- Urban waste (RSU) standing charges. These are FIXED — billed per day, owed
+  whether or not anyone put a bin out — and belong in fixedPart:
+  "RSU FIXO", "RSU Fixa", "Resíduos Sólidos Urbanos Fixos",
+  "Tarifa Fixa Resíduos", "Tarifa de disponibilidade de resíduos",
+  "Tarif. Dis. Resíduos", "Tar. Disp. RU", "TRF FIXA GESTÃO RES. URB",
+  "Tarifa Fixa Gestão Resíduos".
+  Include them even when the VAT column shows no percentage. A waste standing
+  charge marked "não sujeito a IVA" is still a real charge — it simply carries
+  no VAT.
 - "Aluguer de Contador", "Aluguer do contador" (meter rental, billed by days/month)
 - "Taxa Rede Saneamento Fixa", when clearly fixed
 
@@ -181,14 +188,36 @@ NEVER count as fixed (these are variable):
 
 VAT ON THE FIXED PART:
 fixedPart must be the GROSS figure — the fixed charges plus the VAT applied to
-them. Bills usually list fixed lines net (sem IVA), so add the VAT yourself.
-Always prefer the VAT rate printed on that line, or resolved from the bill's own
-footnote legend (e.g. "(1) IVA 6%"). Only when the bill shows no rate at all,
-fall back to these typical Portuguese rates:
+them. The values in the charges column (often headed "FATURAÇÃO" or "VALOR")
+are typically NET. You can confirm this from the summary: the bill prints both
+a "TOTAL SEM IVA" and a "TOTAL". So add the VAT to each net fixed line yourself.
+
+Always prefer the VAT rate the bill itself gives for that line. Only when the
+bill shows no rate anywhere, fall back to these typical Portuguese rates:
   - Contribuição Audiovisual (CAV): 6%
   - Potência / Termo de Potência / Tarifa de Comercialização / DGEG: 23%
   - Network access fixed terms ("acesso às redes"): often 6%
-  - "Não sujeito a IVA" / "IVA n. suj.": 0%
+  - Water, sanitation and waste standing charges: often 6%
+
+FOOTNOTE-CODE VAT (common on water bills — do not get this wrong):
+The VAT column may hold a footnote marker instead of a percentage: a letter or
+a number such as "f)", "a)", "(1)", "(2)". The actual rate is then given in a
+legend elsewhere on the page. Resolve the marker against that legend:
+  - "(1) IVA 6%"                              -> that line is taxed at 6%
+  - "f) Não sujeito n.º2, artigo 2º do CIVA"  -> not subject to VAT: rate 0, so
+                                                 the line's net value is already
+                                                 its gross value
+  - "(2) Não sujeito IVA", "IVA n. suj."      -> also rate 0
+A line carrying a footnote marker must NEVER be skipped. It is a real charge.
+The marker tells you how the line is taxed, not whether the charge exists.
+
+WORKED EXAMPLE (from a real Portuguese water bill):
+  TARIFA DISPONIBILIDADE   32 dias   10,14   VAT 6%
+  SANEAMENTO FIXO          32 dias    6,19   VAT 6%
+  RSU FIXO                 32 dias    4,13   VAT f)  -> legend: não sujeito -> 0%
+  fixedPart = (10,14 + 6,19) x 1.06 + 4,13 = 21,44
+Two ways to get this wrong, both seen in practice: dropping RSU FIXO because its
+VAT cell holds a letter rather than a percentage, or applying 6% to it anyway.
 
 THE DL 60/2019 RULE (EDP bills, important):
 Some EDP bills show an "Acesso às redes" pair: two lines with the SAME base
@@ -313,6 +342,29 @@ const RESPONSE_SCHEMA = {
         required: ["field", "reason"],
       },
     },
+    // TEMPORARY DEBUG FIELD — remove once fixedPart accuracy is settled.
+    // Never forwarded to the client; see buildResult(). Lets us see which
+    // lines the model counted as fixed instead of guessing from the total.
+    fixedBreakdown: {
+      type: "array",
+      description:
+        "Debug only, not shown to the user. One entry per line item counted " +
+        "toward fixedPart, in the same order added. label: the charge name as " +
+        "printed on the bill. net: that line's value before VAT, in euros. " +
+        "vatRate: the VAT percentage applied to it (0 if not subject to VAT). " +
+        "gross: net with that VAT applied, in euros. The gross values here " +
+        "must sum to fixedPart.",
+      items: {
+        type: "object",
+        properties: {
+          label: { type: "string" },
+          net: { type: "number" },
+          vatRate: { type: "number" },
+          gross: { type: "number" },
+        },
+        required: ["label", "net", "vatRate", "gross"],
+      },
+    },
   },
   required: [
     "total",
@@ -325,6 +377,7 @@ const RESPONSE_SCHEMA = {
     "kwh",
     "confidence",
     "issues",
+    "fixedBreakdown",
   ],
 };
 
@@ -441,6 +494,22 @@ function toConfidence(v) {
   const n = toNumber(v);
   if (n === null) return 0;
   return Math.max(0, Math.min(1, n));
+}
+
+// TEMPORARY DEBUG HELPER — see fixedBreakdown in RESPONSE_SCHEMA. Only ever
+// used to shape what gets logged under DEBUG_EXTRACT; its output never goes
+// into buildResult()'s return value.
+function toFixedBreakdown(v) {
+  if (!Array.isArray(v)) return [];
+  return v.slice(0, 20).map((it) => {
+    const o = it && typeof it === "object" ? it : {};
+    return {
+      label: String(o.label || "").trim().slice(0, 80),
+      net: toNumber(o.net),
+      vatRate: toNumber(o.vatRate),
+      gross: toNumber(o.gross),
+    };
+  });
 }
 
 // Strict YYYY-MM-DD → UTC Date. Rejects "2026-02-31" and friends.
@@ -583,6 +652,13 @@ function buildResult(raw) {
   // a bad value is simply dropped rather than reported as an issue.
   let kwh = toNumber(src.kwh);
   if (kwh !== null && !(kwh > 0 && kwh < 100000)) kwh = null;
+
+  // TEMPORARY DEBUG — never sent to the client. Deliberately not routed
+  // through logRequest(): this is a manual debugging aid, opt-in per run,
+  // not the always-on privacy-safe access log.
+  if (process.env.DEBUG_EXTRACT === "1") {
+    console.log("[DEBUG_EXTRACT] fixedBreakdown:", JSON.stringify(toFixedBreakdown(src.fixedBreakdown), null, 2));
+  }
 
   return {
     total,

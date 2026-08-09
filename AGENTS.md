@@ -30,7 +30,7 @@ happens on a branch and is merged only after being tested.
 | `index.html` / `index.js` | Step 1 — bill amount, fixed part, period, expenses, roommates. Bill upload/scan lives here. |
 | `step2.html` / `step2.js` | Step 2 — calendar where days away are marked, one roommate at a time. |
 | `step3.html` / `step3.js` | Step 3 — the calculation and results breakdown. |
-| `backend/server.js` | Bill scanning API. ~2000 lines, currently four overlapping endpoints. |
+| `backend/server.js` | Bill scanning API. One endpoint, one Gemini vision call — see "Bill extraction" below. |
 | `sw.js` | Service worker — offline caching. |
 | `classic/` | Prototype 0, kept for reference. Do not modify. |
 
@@ -66,6 +66,39 @@ For each expense:
 
 This per-day allocation is the core differentiator of the product. Preserve it exactly.
 
+## Bill extraction (backend)
+
+One endpoint, one model call. `POST /api/extract-bill` sends the uploaded PDF or photo
+**directly** to a Gemini vision model. No OCR, no PDF text layer, no per-supplier parsers — the
+page layout is the signal. `POST /api/scan-bill` is a thin alias to the same handler, kept only
+so older cached clients still reach something live. Several photos of one bill go into a single
+call as multiple pages.
+
+- The model name lives in **one** constant, `GEMINI_MODEL`, at the top of `backend/server.js`.
+  Check Google's deprecation list before changing it — `gemini-2.0-flash` and
+  `gemini-2.0-flash-lite` were shut down on 2026-06-01. If accuracy falls short,
+  `gemini-3.6-flash` is the drop-in upgrade.
+- `BILL_PROMPT` carries the Portuguese domain knowledge: fixed vs variable terms, VAT rates per
+  component, the DL 60/2019 cancelling pair, the "período ideal de comunicação de leituras"
+  decoy, the kVA-rating trap, European number format. It is the specification, extracted in
+  `BILL-KNOWLEDGE.md`. Do not trim it to "clean it up" — every rule in it came from a real bill
+  that broke an earlier parser.
+- **Never trust the model's arithmetic.** `buildResult()` re-validates everything in JavaScript:
+  total in (0, 5000), fixedPart in [0, total], both dates parse, periodEnd after periodStart,
+  period 15–100 days. Any failure nulls that field and appends to `issues`.
+- **Low-confidence policy — a product decision, do not soften it.** Below 0.75 confidence a
+  field comes back as `null` with an issue explaining what went wrong, never as a guess. The
+  person uploading is often not the bill's owner and cannot sanity-check a pre-filled number, so
+  a wrong number they never questioned is worse than a blank field. The frontend shows which
+  field failed and why, and offers *retake the photo* and *type it manually* as two equal
+  options. Manual entry is a first-class path — never block the user from just typing three
+  numbers.
+- `redactForAI` is kept in the file but never called: we now send the image itself, so there is
+  no intermediate text to scrub.
+- Requires `GEMINI_API_KEY`. Runs against the Gemini Developer API, which gives no EU
+  data-residency guarantee; moving to Vertex AI on `europe-west1` is the fix if that is ever
+  required.
+
 ## Conventions
 
 - Plain HTML/CSS/JS on the frontend. Do NOT introduce React, Vue, TypeScript, or a bundler.
@@ -80,29 +113,36 @@ Users often upload a bill belonging to their LANDLORD, containing a third party'
 address, NIF and sometimes IBAN.
 
 - Uploads are held in memory only (`multer.memoryStorage()`). Never write an upload to disk.
+  The buffer is nulled in a `finally` block on every path. 10 MB limit; PDF, JPEG, PNG, HEIC only.
 - The API response must contain only: total, fixedPart, periodStart, periodEnd, supplier,
-  billType, currency, confidence. Never name, address, NIF, IBAN, account or meter ID.
-- Never log file contents, extracted text, or raw model responses. Log only status and duration.
-- AI calls must use a paid, EU-region provider that does not train on submitted data.
+  billType, currency, kwh, confidence, issues. Never name, address, NIF, IBAN, account or meter
+  ID — not even as a debug field. `buildResult()` constructs the response key by key from that
+  fixed list and never spreads the model's object, so an extra key the model invents has no path
+  to the client. `cd backend && npm test` asserts this; keep it passing.
+- Never log file contents, extracted text, raw model responses, or filenames. Log only:
+  timestamp, endpoint, status, duration in ms, file size in bytes.
+- AI calls must use a paid provider that does not train on submitted data. Gemini's paid tier
+  does not train on submitted data; note the EU-region caveat under "Bill extraction" above.
 
 ## Known issues (in priority order)
 
-1. `step2.js` counts period days with `Math.ceil`, `step3.js` with `Math.floor`. Across the
-   March daylight-saving change they disagree by one day.
-2. Day keys use `.toISOString()`, which is UTC, so keys are labelled one day earlier than the
-   day the user clicked. Currently harmless because both files are wrong identically — but it
-   will break the moment data is shared across timezones.
-3. `step2.js` keys absences by roommate NAME; two roommates with the same name silently share
-   one set of days. `step3.js` correctly uses index.
-4. `backend/server.js` has four overlapping upload endpoints and `index.js` calls them in a
-   fallback chain, so one upload can trigger four OCR runs. This is why scanning takes ~1 minute.
-5. Hardcoded per-supplier text parsers (`parse_SU_Eletricidade`, `parse_EDP_Comercial`) break
-   whenever a supplier changes their PDF layout.
-6. A block commented `APPLY AI FIXED COSTS` is copy-pasted five times in server.js.
-7. The same ~600 lines of CSS are duplicated inline in all three HTML files.
-8. Dark mode flashes white on load because the theme class is applied by JS after first paint.
-9. `fixedPerRoommate` is computed in step3.js but never used.
-10. Calendar days are divs with onclick — no keyboard or screen-reader support.
+1. The same CSS is duplicated inline in all three HTML files.
+2. Dark mode flashes white on load: the theme is read in `index.js` (line ~316) but the script
+   tag sits at the end of `<body>`, so the class lands after first paint.
+3. Calendar days are divs with onclick — no keyboard or screen-reader support.
+
+Fixed, kept here so nobody "re-discovers" them:
+
+- Day counting and day keys — `dateUtils.js` now shares `toISO` (local, not UTC) and
+  `countDaysInclusive` between step2 and step3, so the old `Math.ceil`/`Math.floor` mismatch
+  and the UTC off-by-one are gone.
+- Absences keyed by roommate name — step2 now tracks by stable roommate id and serialises to an
+  array in `roommates` order, so duplicate names stay independent.
+- Four overlapping upload endpoints with a fallback chain in `index.js` — replaced by the single
+  `/api/extract-bill`, which is why scanning no longer takes about a minute.
+- Per-supplier text parsers, the five copies of the `APPLY AI FIXED COSTS` block, and the
+  `LOG_FULL_TEXT` flag — all deleted with the old pipeline.
+- `fixedPerRoommate` unused — it is used in the step3 breakdown text.
 
 ## How to work here
 

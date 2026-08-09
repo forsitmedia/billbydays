@@ -189,7 +189,12 @@ function hideFullLoading() {
 
 
 
-const API_BASE = "https://billbydays-backend.onrender.com";
+// Served from localhost → talk to the local backend, so testing never sends a
+// real bill to production. Anywhere else → Render.
+const API_BASE =
+  location.hostname === "localhost" || location.hostname === "127.0.0.1"
+    ? "http://localhost:3000"
+    : "https://billbydays-backend.onrender.com";
 
 // One endpoint, one model call. There is deliberately no fallback chain:
 // the old code tried four endpoints in sequence, which is why a scan used to

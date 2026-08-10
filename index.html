@@ -1077,63 +1077,125 @@ body.pro-mode .install-hint strong {
 
     /* ... inside <style> ... */
 
-.fixed-details-list {
-  margin-top: 8px;
+/* ====== "HOW THIS WAS CALCULATED" — the fixed-part breakdown ====== */
+/* Collapsed by default: reassurance for the people who want it, out of the way
+   for everyone else. <details>/<summary> so it opens from the keyboard without
+   any JS of its own. */
+.fixed-calc {
+  margin-top: 10px;
   background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 11px;
-  color: #4b5563;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
 }
 
-.fixed-item-row {
+.fixed-calc-summary {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
-  align-items: flex-start;
-}
-
-.fixed-item-label {
-  flex: 1 1 auto;
-  min-width: 0;
-  line-height: 1.15;
-}
-
-.fixed-item-right {
-  flex: 0 0 110px;          /* ✅ keeps a consistent right column width */
-  text-align: right;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  white-space: nowrap;
-  line-height: 1.05;
-}
-
-.fixed-item-amt {
+  gap: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-main);
+  list-style: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-.fixed-item-vat {
+/* Safari paints its own triangle without this. */
+.fixed-calc-summary::-webkit-details-marker { display: none; }
+
+.fixed-calc-summary:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: -2px;
+}
+
+.fixed-calc-chevron {
+  flex: 0 0 auto;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.fixed-calc[open] .fixed-calc-chevron { transform: rotate(90deg); }
+
+.fixed-calc-body {
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.fixed-calc-intro {
+  margin-bottom: 9px;
+  line-height: 1.35;
+}
+
+.fixed-calc-table {
+  width: 100%;
+  border-collapse: collapse;
+  /* index.html has no doctype, so it renders in quirks mode, where a <table>
+     does NOT inherit colour from its parent and falls back to black. Without
+     this the rows are black-on-navy in dark mode. */
+  color: inherit;
+}
+
+/* Gutter lives on the cell, not on a gap: the columns must stay narrow enough
+   to leave room for long charge names like "TARIFA DISPONIBILIDADE". */
+.fixed-calc-table td {
+  padding: 3px 0 3px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.fixed-calc-table td:first-child { padding-left: 0; }
+
+.fixed-calc-label {
+  line-height: 1.25;
+  /* break-word, not anywhere: wrap between words first and only split a word
+     that cannot fit on a line of its own. */
+  overflow-wrap: break-word;
+}
+
+.fixed-calc-days {
+  width: 46px;
+  text-align: right;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+.fixed-calc-amt {
+  width: 54px;
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums;
+}
+
+.fixed-calc-vat {
+  width: 38px;
+  text-align: right;
+  white-space: nowrap;
   font-size: 9px;
-  opacity: 0.6;
-  margin-top: 2px;
-  line-height: 1.05;
+  line-height: 1.6;
+  opacity: 0.7;
 }
 
-
-.fixed-items-note {
-  margin-top: 6px;
-  font-size: 9px;
-  opacity: 0.6;
+.fixed-calc-total td {
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+  font-weight: 600;
+  color: var(--text-main);
 }
 
-
-/* Dark mode support */
-body.pro-mode .fixed-item-amt {
-  color: #e5e7eb;
+.fixed-calc-note {
+  margin-top: 9px;
+  font-size: 10px;
+  opacity: 0.7;
+  line-height: 1.3;
 }
 
 /* ============ FULL PAGE LOADING (simple squares + staged copy) ============ */
@@ -1530,31 +1592,29 @@ body.pro-mode .modal-btn.cancel:hover{
   background: #0b1224;
 }
 
-/* --- Fixed breakdown box inside the modal --- */
-/* Strong selector so it wins even if other rules exist */
-body.pro-mode #fixedDetails.fixed-details-list{
+/* --- "How this was calculated" box inside the modal --- */
+body.pro-mode .fixed-calc{
   background: #111827;
   border-color: #374151;
   color: #9ca3af;
 }
 
-/* Works with BOTH versions:
-   - old: .fixed-item-row span:last-child
-   - new: .fixed-item-amt
-*/
-body.pro-mode .fixed-item-row span:last-child,
-body.pro-mode .fixed-item-amt{
+body.pro-mode .fixed-calc-summary{
   color: #e5e7eb;
 }
 
-/* Make IVA/VAT line + disclaimer smaller (if those classes exist) */
-.fixed-item-vat{
-  font-size: 9px;
-  opacity: 0.6;
+body.pro-mode .fixed-calc-chevron{
+  color: #9ca3af;
 }
-.fixed-items-note{
-  font-size: 9px;
-  opacity: 0.6;
+
+body.pro-mode .fixed-calc-body,
+body.pro-mode .fixed-calc-total td{
+  border-top-color: #374151;
+}
+
+body.pro-mode .fixed-calc-amt,
+body.pro-mode .fixed-calc-total td{
+  color: #e5e7eb;
 }
 
 /* --- Calendar modal --- */
@@ -1986,14 +2046,17 @@ body::after{
 
     <div class="modal-field">
       <label>Total amount (€)</label>
-      <input id="expTotal" type="number" />
+      <!-- step="0.01": type="number" defaults to step=1, which makes every
+           amount with cents step-mismatched and pops "the two nearest valid
+           values are 48 and 49" the moment the spinner is touched. -->
+      <input id="expTotal" type="number" step="0.01" />
     </div>
 
     <div class="modal-field">
       <label>Fixed part (€) · optional</label>
-      <input id="expFixed" type="number" />
+      <input id="expFixed" type="number" step="0.01" />
       
-      <div id="fixedDetails" class="fixed-details-list" style="display:none;"></div>
+      <div id="fixedDetails" style="display:none;"></div>
     
     </div>
 

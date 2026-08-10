@@ -252,6 +252,16 @@ expTotal.addEventListener("input", () => {
   }
 });
 
+// A hand-typed fixed part has nothing to explain, so as soon as the user edits
+// this field the scanned breakdown stops describing the number above it. Reset
+// per modal opening; the breakdown is dropped from the expense only on save.
+let fixedEditedManually = false;
+
+expFixed.addEventListener("input", () => {
+  fixedEditedManually = true;
+  hideFixedDetails();
+});
+
 
 // Calendar DOM
 const dateRangeField = document.getElementById("dateRangeField");
@@ -273,11 +283,13 @@ const calendarCopyMain = document.getElementById("calendarCopyMain");
 /* STATE */
 
 // Expenses for Pro mode
+// fixedBreakdown: the scanner's line-by-line workings behind `fixed`, shown in
+// the expense modal. Empty whenever the fixed part was typed by hand.
 let expenses = [
-  { id: "electricity", name: "Electricity", icon: "⚡", total: 0, fixed: 0, from: null, to: null },
-  { id: "water",       name: "Water",       icon: "💧", total: 0, fixed: 0, from: null, to: null },
-  { id: "gas",         name: "Gas",         icon: "🔥", total: 0, fixed: 0, from: null, to: null },
-  { id: "other",       name: "Other",       icon: "🛒", total: 0, fixed: 0, from: null, to: null }
+  { id: "electricity", name: "Electricity", icon: "⚡", total: 0, fixed: 0, from: null, to: null, fixedBreakdown: [] },
+  { id: "water",       name: "Water",       icon: "💧", total: 0, fixed: 0, from: null, to: null, fixedBreakdown: [] },
+  { id: "gas",         name: "Gas",         icon: "🔥", total: 0, fixed: 0, from: null, to: null, fixedBreakdown: [] },
+  { id: "other",       name: "Other",       icon: "🛒", total: 0, fixed: 0, from: null, to: null, fixedBreakdown: [] }
 ];
 
 let editingExpense = null;
@@ -371,7 +383,7 @@ if (savedTheme) {
           if (saved.from) target.from = saved.from;
           if (saved.to)   target.to = saved.to;
 
-          if (Array.isArray(saved.fixedItems)) target.fixedItems = saved.fixedItems;
+          if (Array.isArray(saved.fixedBreakdown)) target.fixedBreakdown = saved.fixedBreakdown;
 
     if (saved.from) target.from = saved.from;
     if (saved.to)   target.to = saved.to;
@@ -501,7 +513,7 @@ item.dataset.type = exp.id; // <-- IMPORTANT: lets spinner target the right card
   event.stopPropagation();
   exp.total = 0;
   exp.fixed = 0;
-  exp.fixedItems = []; // ✅ clear scanned breakdown
+  exp.fixedBreakdown = []; // the workings go with the number they explained
 
 
   renderExpenses();
@@ -624,53 +636,84 @@ function openExpenseModal(exp) {
   expTotal.value = exp.total || "";
   expFixed.value = exp.fixed || "";
   
-  // --- NEW LOGIC: Show Breakdown ---
-  const detailsBox = document.getElementById("fixedDetails");
-  if (detailsBox) {
-    if (exp.fixedItems && exp.fixedItems.length > 0) {
-      // Build the HTML list (aligned right column + small IVA line)
-// Choose one label (Portugal-first):
-const taxLabel = "IVA"; // Portuguese bills say IVA (VAT)
-
-const rows = exp.fixedItems.map(item => {
-  const amount = `€${Number(item.amount).toFixed(2)}`;
-
-  const vr = Number(item.vatRate);
-  const pct =
-    Number.isFinite(vr) && vr > 0
-      ? Math.round(vr > 1 ? vr : vr * 100)
-      : null;
-
-  const taxText = pct ? `(${taxLabel} ${pct}%)` : "";
-
-  return `
-    <div class="fixed-item-row">
-      <span class="fixed-item-label">${item.evidence}</span>
-
-      <span class="fixed-item-right">
-        <span class="fixed-item-amt">${amount}</span>
-        <span class="fixed-item-vat">${taxText || "&nbsp;"}</span>
-      </span>
-    </div>
-  `;
-}).join("");
-
-detailsBox.innerHTML = `
-  <div style="margin-bottom:4px; font-weight:600;">Scanned breakdown:</div>
-  ${rows}
-  <div class="fixed-items-note">Amounts include ${taxLabel} when applicable.</div>
-`;
-
-
-      detailsBox.style.display = "block";
-    } else {
-      detailsBox.style.display = "none";
-      detailsBox.innerHTML = "";
-    }
-  }
-  // --------------------------------
+  fixedEditedManually = false;
+  renderFixedBreakdown(exp);
 
   expModal.style.display = "flex";
+}
+
+// The lines the scanner added up to reach the fixed part, so the number is
+// something the user can check rather than a single figure they have to trust.
+// Collapsed by default. Hidden entirely when there is nothing to show — no
+// scan, or a fixed part the user typed themselves.
+function renderFixedBreakdown(exp) {
+  const box = document.getElementById("fixedDetails");
+  if (!box) return;
+
+  const lines = Array.isArray(exp.fixedBreakdown) ? exp.fixedBreakdown : [];
+  if (!lines.length) {
+    box.style.display = "none";
+    box.innerHTML = "";
+    return;
+  }
+
+  const money = (n) => "€" + Number(n || 0).toFixed(2);
+
+  const rows = lines.map((line) => {
+    // Not every fixed charge is billed per day: the DGEG fee and the
+    // audiovisual contribution are monthly, and calling those "2 days" is a
+    // plain lie about the bill. The server sends the unit as "day" or "month",
+    // or null when it could not read one — and then we show no quantity at all
+    // rather than guessing, the same way a low-confidence field comes back
+    // blank. `line.days` is the field's old name, still in localStorage for
+    // anyone who scanned before this shipped.
+    const q = Number(line.qty != null ? line.qty : line.days);
+    const unit = line.unit || (line.days != null ? "day" : null);
+    const noun = unit === "month" ? "month" : "day";
+    const qty =
+      Number.isFinite(q) && q > 0 && unit ? `${q} ${noun}${q === 1 ? "" : "s"}` : "";
+
+    // vatRate arrives as a fraction: 0.06 is 6%, 0 is a charge the bill does
+    // not tax at all (RSU standing charges, "não sujeito a IVA"). Saying so
+    // beats a blank cell that reads like something went wrong.
+    const vat = Number(line.vatRate) === 0 ? "no VAT" : "";
+
+    return `
+        <tr>
+          <td class="fixed-calc-label">${escapeHtml(line.label || "")}</td>
+          <td class="fixed-calc-days">${qty}</td>
+          <td class="fixed-calc-amt">${money(line.gross)}</td>
+          <td class="fixed-calc-vat">${vat}</td>
+        </tr>`;
+  }).join("");
+
+  box.innerHTML = `
+    <details class="fixed-calc">
+      <summary class="fixed-calc-summary">
+        <span>How this was calculated</span>
+        <span class="fixed-calc-chevron" aria-hidden="true">›</span>
+      </summary>
+      <div class="fixed-calc-body">
+        <p class="fixed-calc-intro">
+          These are charges you pay regardless of how much you use, so they're
+          split equally between roommates.
+        </p>
+        <table class="fixed-calc-table">
+          <tbody>${rows}</tbody>
+          <tfoot>
+            <tr class="fixed-calc-total">
+              <td class="fixed-calc-label">Fixed part</td>
+              <td class="fixed-calc-days"></td>
+              <td class="fixed-calc-amt">${money(exp.fixed)}</td>
+              <td class="fixed-calc-vat"></td>
+            </tr>
+          </tfoot>
+        </table>
+        <p class="fixed-calc-note">Amounts include IVA (VAT) where it applies.</p>
+      </div>
+    </details>
+  `;
+  box.style.display = "block";
 }
 
 cancelModal.onclick = () => {
@@ -693,6 +736,7 @@ saveModal.onclick = () => {
 
   editingExpense.total = t;
   editingExpense.fixed = f;
+  if (fixedEditedManually) editingExpense.fixedBreakdown = [];
 
 
   expModal.style.display = "none";
@@ -714,7 +758,7 @@ resetBill.onclick = () => {
   expenses.forEach(e => {
     e.total = 0;
     e.fixed = 0;
-    e.fixedItems = []; // ✅ also clear scanned breakdown
+    e.fixedBreakdown = [];
   });
   freeActiveExpenseId = null;
   renderExpenses();
@@ -1263,9 +1307,12 @@ function applyScannedBill(result) {
     expenses.find(e => e.total === 0) ||
     expenses[0];
 
-  // The extractor no longer returns a line-by-line breakdown, so make sure a
-  // breakdown from a previous scan doesn't stay attached to this card.
-  target.fixedItems = [];
+  // The lines behind fixedPart, shown under the Fixed part field. Always
+  // reassigned, so a breakdown from an earlier scan cannot linger on this card.
+  // The backend sends [] whenever fixedPart itself did not survive validation.
+  target.fixedBreakdown = Array.isArray(result.fixedBreakdown)
+    ? result.fixedBreakdown
+    : [];
 
   // 1) TOTAL
   if (typeof result.total === "number") {

@@ -219,6 +219,37 @@ WORKED EXAMPLE (from a real Portuguese water bill):
 Two ways to get this wrong, both seen in practice: dropping RSU FIXO because its
 VAT cell holds a letter rather than a percentage, or applying 6% to it anyway.
 
+SELF-CHECK — DAYS x UNIT PRICE (this is where water bills go wrong):
+Fixed lines on Portuguese water bills are billed as a QUANTITY OF DAYS times a
+UNIT PRICE, and the bill prints both — a quantity column reading "32 dias" and a
+unit-price column reading e.g. "0,1936". Whenever a fixed line shows those two
+numbers, its net value MUST equal
+
+    days x unit price
+
+Compute that product and use it. Do NOT read the value across the row: these
+tables are dense, the columns do not line up, and the figure your eye lands on
+is very often the total of a DIFFERENT row.
+
+  SANEAMENTO FIXO   32 dias   0,1936   ->  32 x 0,1936 = 6,19   so net = 6,19
+
+On a real Águas de Cascais bill this exact row came back as 1,75 — which is the
+total column of the "ÁGUA 2º Escalão" row further up the table, after
+deductions. The product is the answer; the number sitting nearest it is not.
+
+Whenever a line shows a quantity and a unit price, report both in that line's
+fixedBreakdown entry, as "qty" and "unitPrice", so the arithmetic can be
+re-checked. A line whose value does not equal qty x unit price is thrown away.
+
+ALWAYS REPORT THE UNIT THAT QUANTITY IS COUNTED IN, as "unit".
+Not every fixed line is billed per day. Water standing charges are billed per
+day ("32 dias"), but the DGEG fee and the Contribuição Audiovisual are billed
+per MONTH — an electricity bill covering two months shows them as "2 meses" at
+0,07 and 2,85. Both are quantities times a unit price, and both are checked the
+same way, but they are not the same unit. Copy what the bill prints: "dias" for
+a line counted in days, "meses" for one counted in months. A monthly charge
+reported without its unit is shown to the user as "2 days", which is wrong.
+
 THE DL 60/2019 RULE (EDP bills, important):
 Some EDP bills show an "Acesso às redes" pair: two lines with the SAME base
 value, OPPOSITE signs, and DIFFERENT VAT rates — typically one negative at 23%
@@ -342,18 +373,28 @@ const RESPONSE_SCHEMA = {
         required: ["field", "reason"],
       },
     },
-    // TEMPORARY DEBUG FIELD — remove once fixedPart accuracy is settled.
-    // Never forwarded to the client; see buildResult(). Lets us see which
-    // lines the model counted as fixed instead of guessing from the total.
+    // NOT a debug field any more: this list IS fixedPart. The server sums it
+    // and throws away the model's own fixedPart, because on a real bill the
+    // two disagreed. A normalised copy is also returned to the client and shown
+    // under the Fixed part field, so the user can check the sum instead of
+    // trusting it — labels and amounts only, see buildResult().
     fixedBreakdown: {
       type: "array",
       description:
-        "Debug only, not shown to the user. One entry per line item counted " +
-        "toward fixedPart, in the same order added. label: the charge name as " +
-        "printed on the bill. net: that line's value before VAT, in euros. " +
-        "vatRate: the VAT percentage applied to it (0 if not subject to VAT). " +
-        "gross: net with that VAT applied, in euros. The gross values here " +
-        "must sum to fixedPart.",
+        "One entry per line item counted toward fixedPart, in the order added. " +
+        "label: the charge name as printed on the bill. net: that line's value " +
+        "before VAT, in euros. vatRate: the VAT percentage applied to it (0 if " +
+        "not subject to VAT). gross: net with that VAT applied, in euros. " +
+        "qty, unit and unitPrice: fill these in whenever the line is billed as " +
+        "a quantity at a unit price and the bill prints both, because net must " +
+        "then equal qty x unitPrice and any line where it does not is " +
+        "discarded. unit is the unit that quantity is counted in, copied from " +
+        "the bill: \"dias\" for a line billed per day, \"meses\" for one billed " +
+        "per month. Always give unit when you give qty — a monthly charge " +
+        "reported as though it were daily is shown to the user as the wrong " +
+        "thing. Omit all three for lines not billed by quantity. The server " +
+        "recomputes gross and sums this list to get fixedPart, so a fixed " +
+        "charge missing from this list is a charge the customer never sees.",
       items: {
         type: "object",
         properties: {
@@ -361,6 +402,9 @@ const RESPONSE_SCHEMA = {
           net: { type: "number" },
           vatRate: { type: "number" },
           gross: { type: "number" },
+          qty: { type: "number", nullable: true },
+          unit: { type: "string", nullable: true },
+          unitPrice: { type: "number", nullable: true },
         },
         required: ["label", "net", "vatRate", "gross"],
       },
@@ -496,20 +540,150 @@ function toConfidence(v) {
   return Math.max(0, Math.min(1, n));
 }
 
-// TEMPORARY DEBUG HELPER — see fixedBreakdown in RESPONSE_SCHEMA. Only ever
-// used to shape what gets logged under DEBUG_EXTRACT; its output never goes
-// into buildResult()'s return value.
-function toFixedBreakdown(v) {
-  if (!Array.isArray(v)) return [];
-  return v.slice(0, 20).map((it) => {
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+
+// The model reports a VAT rate either as a percentage (6) or as a fraction
+// (0.06); both mean 6%. Anything at or above 1 is read as a percentage. Always
+// returns a fraction, or null for a rate we cannot use.
+function normaliseVatRate(v) {
+  const n = toNumber(v);
+  if (n === null || n < 0) return null;
+  const rate = n >= 1 ? n / 100 : n;
+  return rate > 1 ? null : rate;
+}
+
+// A fixed line billed by quantity prints both the count and the unit price, so
+// its value has to be their product. Further off than this and the model has
+// read a figure out of a neighbouring row.
+const QTY_PRICE_TOLERANCE = 0.01; // euros
+
+// The model sees the full bill, so its text must never be returned verbatim.
+// Convert recognised fixed-charge labels to a small, safe vocabulary; anything
+// else remains useful to the UI without becoming a channel for customer data.
+// Strip accents and case so "Potência" and "POTENCIA" hit the same rule.
+function foldForMatching(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+// ORDER MATTERS. The first match wins, so specific rules come before generic
+// ones, and `desconto` sits ahead of `quota` / `tarifa fixa` so a discount tied
+// to a charge still reads as a discount rather than as the charge itself.
+//
+// Every charge BILL_PROMPT tells the model to extract needs a rule here, or it
+// arrives as the generic fallback and the user sees two different charges under
+// one meaningless name. A real EDP bill showed exactly that — "Encargo fixo"
+// twice, once for the DGEG fee and once for the audiovisual contribution.
+function safeFixedChargeLabel(value) {
+  const label = foldForMatching(value);
+
+  // "RES. URB" is how "TRF FIXA GESTÃO RES. URB" abbreviates it.
+  if (/\b(?:rsu|residuos?|lixo|res\.?\s*urb)/.test(label)) return "Resíduos urbanos (RSU)";
+  // `saneam` also catches the abbreviated "TRF FIXA SANEAM".
+  if (/\bsaneam/.test(label)) return "Saneamento fixo";
+  if (/\b(?:disponibilidade|tarifa fixa.*agua|quota.*agua)\b/.test(label)) {
+    return "Tarifa de disponibilidade";
+  }
+  if (/\bpotencia\b/.test(label)) return "Potência contratada";
+  if (/\b(?:termo fixo|gas)\b/.test(label)) return "Termo fixo";
+  if (/\bcomercializ/.test(label)) return "Termo de comercialização";
+  // "CAV" is the usual abbreviation; poor scans render it "JCAV".
+  if (/\b(?:audiovisual|j?cav)\b/.test(label)) return "Contribuição audiovisual";
+  if (/\b(?:dgeg|taxa de exploracao)\b/.test(label)) return "Taxa DGEG";
+  if (/\baluguer\b/.test(label)) return "Aluguer de contador";
+  if (/\bdesconto\b/.test(label)) return "Desconto fixo";
+  if (/\bquota\b/.test(label)) return "Quota de serviço";
+  if (/\b(?:tarifa fixa|trf\.? fixa)\b/.test(label)) return "Tarifa fixa";
+  // `urgencias?` because the bills print the plural, "Urgências".
+  if (/\b(?:assistencia|urgencias?|seguro|plano|protecao)\b/.test(label)) {
+    return "Serviço fixo";
+  }
+  return "Encargo fixo";
+}
+
+// A fixed line is billed either per day or per month, and the bill says which.
+// Reading "2 meses" as days is what printed "2 days" beside the audiovisual
+// contribution, a charge that is billed monthly. Like the label this maps to a
+// closed set, so the model's own text never reaches the client — and a unit we
+// do not recognise becomes null, which the frontend renders as no quantity at
+// all rather than as a wrong one.
+function safeUnit(value) {
+  const unit = foldForMatching(value);
+  if (/\b(?:dia|dias|day|days)\b/.test(unit)) return "day";
+  if (/\b(?:mes|meses|mensal|month|months)\b/.test(unit)) return "month";
+  return null;
+}
+
+// fixedPart is the sum of this list, so every line is re-checked here and all
+// of the model's arithmetic — its gross column and its fixedPart — is thrown
+// away. Returns the lines we accept, with gross recomputed, and the ones we
+// dropped.
+function normaliseFixedBreakdown(v) {
+  const kept = [];
+  const dropped = [];
+  if (!Array.isArray(v)) return { kept, dropped };
+
+  for (const it of v.slice(0, 20)) {
     const o = it && typeof it === "object" ? it : {};
-    return {
-      label: String(o.label || "").trim().slice(0, 80),
+    const line = {
+      label: safeFixedChargeLabel(o.label),
       net: toNumber(o.net),
-      vatRate: toNumber(o.vatRate),
-      gross: toNumber(o.gross),
+      vatRate: normaliseVatRate(o.vatRate),
+      // `o.days` is the field this used to be called. Read it as a fallback so
+      // a model that answers with the old name still gets arithmetic-checked
+      // rather than silently skipping the check.
+      qty: toNumber(o.qty !== undefined && o.qty !== null ? o.qty : o.days),
+      unit: safeUnit(o.unit),
+      unitPrice: toNumber(o.unitPrice),
     };
-  });
+
+    if (line.net === null || line.vatRate === null) {
+      dropped.push({ line, why: "unreadable" });
+      continue;
+    }
+
+    // Holds whether the quantity is days or months: a monthly line still has to
+    // equal its count times its unit price.
+    if (line.qty !== null && line.qty > 0 && line.unitPrice !== null && line.unitPrice !== 0) {
+      const expected = line.qty * line.unitPrice;
+      if (Math.abs(line.net - expected) > QTY_PRICE_TOLERANCE + 1e-9) {
+        dropped.push({ line, why: "qty x unitPrice mismatch", expected: round2(expected) });
+        continue;
+      }
+    }
+
+    line.gross = line.net * (1 + line.vatRate);
+    kept.push(line);
+  }
+
+  return { kept, dropped };
+}
+
+// fixedPart is rounded once, from the unrounded sum; the lines behind it are
+// rounded one by one. Both are right on their own and wrong together — a real
+// bill showed 21,46 + 0,17 + 6,04 under a total of 27,68. The panel exists so
+// the user can add the rows up and check the number, so the rows have to
+// reconcile: round each to the cent, then hand the leftover cent to whichever
+// lines were rounded furthest, largest remainder first. fixedPart itself is
+// never adjusted — it stays the accurate figure and the display bends to it.
+function allocateToTotal(grosses, total) {
+  const cents = grosses.map((g) => Math.round(g * 100));
+  const target = Math.round(total * 100);
+  let diff = target - cents.reduce((s, c) => s + c, 0);
+  if (diff !== 0 && cents.length) {
+    const step = diff > 0 ? 1 : -1;
+    const order = grosses
+      .map((g, i) => ({ i, remainder: Math.abs(g * 100 - cents[i]) }))
+      .sort((a, b) => b.remainder - a.remainder);
+    for (let k = 0; k < Math.abs(diff); k++) {
+      cents[order[k % order.length].i] += step;
+    }
+  }
+  return cents.map((c) => c / 100);
 }
 
 // Strict YYYY-MM-DD → UTC Date. Rejects "2026-02-31" and friends.
@@ -584,7 +758,31 @@ function buildResult(raw) {
   }
 
   // --- fixedPart -----------------------------------------------------------
-  let fixedPart = toNumber(src.fixedPart);
+  // The model works out fixedPart separately from the itemised list it reports,
+  // and the two disagree: on an Águas de Cascais bill the list summed to 16,73
+  // gross while fixedPart came back as 16,33. The list is the only version that
+  // can be checked line by line, so the list wins and src.fixedPart is ignored
+  // outright. We never take the model's word for a sum.
+  const breakdown = normaliseFixedBreakdown(src.fixedBreakdown);
+
+  // Reasons stay generic on purpose: a label is text lifted off the bill, and
+  // bill text must not be echoed back to the client.
+  for (const d of breakdown.dropped) {
+    addIssue(
+      "fixedPart",
+      d.why === "qty x unitPrice mismatch"
+        ? "One of the fixed charges did not match its own daily rate, so we left it out."
+        : "We could not read one of the fixed charges, so we left it out."
+    );
+  }
+
+  let fixedPart = breakdown.kept.length
+    ? round2(breakdown.kept.reduce((sum, l) => sum + l.gross, 0))
+    : null;
+
+  if (fixedPart === null) {
+    addIssue("fixedPart", "We could not itemise the fixed charges on this bill.");
+  }
 
   if (fixedPart !== null && confFixed < CONFIDENCE_FLOOR) {
     fixedPart = null;
@@ -653,16 +851,30 @@ function buildResult(raw) {
   let kwh = toNumber(src.kwh);
   if (kwh !== null && !(kwh > 0 && kwh < 100000)) kwh = null;
 
-  // TEMPORARY DEBUG — never sent to the client. Deliberately not routed
-  // through logRequest(): this is a manual debugging aid, opt-in per run,
-  // not the always-on privacy-safe access log.
-  if (process.env.DEBUG_EXTRACT === "1") {
-    console.log("[DEBUG_EXTRACT] fixedBreakdown:", JSON.stringify(toFixedBreakdown(src.fixedBreakdown), null, 2));
-  }
+  // What the user is shown under the Fixed part field. Rebuilt key by key
+  // from the lines we accepted so it carries line labels and amounts ONLY —
+  // never anything identifying; see the privacy rules in CLAUDE.md. Dropped
+  // lines stay out of the response but keep their issue, and if fixedPart
+  // itself did not survive validation there is no sum left to explain.
+  const shownGross =
+    fixedPart === null ? [] : allocateToTotal(breakdown.kept.map((l) => l.gross), fixedPart);
+
+  const fixedBreakdown =
+    fixedPart === null
+      ? []
+      : breakdown.kept.map((l, i) => ({
+          label: l.label,
+          net: round2(l.net),
+          vatRate: l.vatRate,
+          gross: shownGross[i],
+          qty: l.qty,
+          unit: l.unit,
+        }));
 
   return {
     total,
     fixedPart,
+    fixedBreakdown,
     periodStart,
     periodEnd,
     supplier,
@@ -679,6 +891,7 @@ function emptyResult(field, reason) {
   return {
     total: null,
     fixedPart: null,
+    fixedBreakdown: [],
     periodStart: null,
     periodEnd: null,
     supplier: null,

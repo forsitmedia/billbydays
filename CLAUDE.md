@@ -43,7 +43,7 @@ happens on a branch and is merged only after being tested.
 | `splitroomRoommatesVersion` | index.js | step2.js | version string (currently `"2"`); step2.js clears roommate data and bounces to Step 1 if this doesn't match |
 | `splitroomAbsences` | step2.js | step3.js | array of arrays of "YYYY-MM-DD", indexed by roommate position |
 | `splitroomBill` | index.js | step2.js, step3.js | number |
-| `splitroomExpenses` | index.js | step3.js | array of {id, name, icon, total, fixed, from, to} |
+| `splitroomExpenses` | index.js | step3.js | array of {id, name, icon, total, fixed, from, to, fixedBreakdown} |
 | `splitroomStart` / `splitroomEnd` | index.js | step2.js, step3.js | full ISO timestamp string |
 | `splitroomTheme` | all | all | "light" or "dark" |
 | `splitroomMode` | — | — | legacy, being removed |
@@ -86,6 +86,27 @@ call as multiple pages.
 - **Never trust the model's arithmetic.** `buildResult()` re-validates everything in JavaScript:
   total in (0, 5000), fixedPart in [0, total], both dates parse, periodEnd after periodStart,
   period 15–100 days. Any failure nulls that field and appends to `issues`.
+- **`fixedPart` is derived, never read.** The model returns an itemised `fixedBreakdown`;
+  `buildResult()` normalises each line's `vatRate` (6 and 0.06 both mean 6%), recomputes `gross`
+  as `net * (1 + rate)`, and sums those. The model's own `fixedPart` is discarded — on a real
+  Águas de Cascais bill it said 16,33 against a list summing to 16,73. No breakdown means
+  `fixedPart` is null. A line printing both `qty` and `unitPrice` must satisfy
+  `net ≈ qty * unitPrice` to within a cent or the line is dropped with an issue; that is what
+  caught SANEAMENTO FIXO being read as 1,75 (a value from a different row) instead of
+  32 × 0,1936 = 6,19. The kept lines are returned to the client and shown under the Fixed part
+  field as "How this was calculated", so the number is auditable instead of magic.
+- **A quantity is meaningless without its unit.** Not every fixed charge is billed per day: water
+  standing charges are ("32 dias"), but the DGEG fee and the Contribuição Audiovisual are billed
+  per month, so a two-month electricity bill prints "2 meses". Each line therefore carries `qty`
+  plus a `unit`, which `safeUnit()` maps to `"day"`, `"month"`, or `null`. The arithmetic check
+  above is unit-agnostic and holds either way. A unit we cannot read is `null` and the frontend
+  then shows no quantity at all — the same "blank beats a wrong number" rule as the confidence
+  floor. Rendering months as "2 days" is what this replaced.
+- **The displayed rows must add up to the displayed total.** `fixedPart` is rounded once from the
+  unrounded sum, while each line is rounded on its own, so the two can disagree by a cent — a real
+  bill showed 21,46 + 0,17 + 6,04 under a total of 27,68. `allocateToTotal()` gives the leftover
+  cent to the lines rounded furthest (largest remainder), so the column always reconciles.
+  `fixedPart` is never adjusted to match; the display bends to it, not the other way round.
 - **Low-confidence policy — a product decision, do not soften it.** Below 0.75 confidence a
   field comes back as `null` with an issue explaining what went wrong, never as a guess. The
   person uploading is often not the bill's owner and cannot sanity-check a pre-filled number, so
@@ -114,11 +135,23 @@ address, NIF and sometimes IBAN.
 
 - Uploads are held in memory only (`multer.memoryStorage()`). Never write an upload to disk.
   The buffer is nulled in a `finally` block on every path. 10 MB limit; PDF, JPEG, PNG, HEIC only.
-- The API response must contain only: total, fixedPart, periodStart, periodEnd, supplier,
-  billType, currency, kwh, confidence, issues. Never name, address, NIF, IBAN, account or meter
-  ID — not even as a debug field. `buildResult()` constructs the response key by key from that
-  fixed list and never spreads the model's object, so an extra key the model invents has no path
-  to the client. `cd backend && npm test` asserts this; keep it passing.
+- The API response must contain only: total, fixedPart, fixedBreakdown, periodStart, periodEnd,
+  supplier, billType, currency, kwh, confidence, issues. Never name, address, NIF, IBAN, account
+  or meter ID — not even as a debug field. `buildResult()` constructs the response key by key
+  from that fixed list and never spreads the model's object, so an extra key the model invents
+  has no path to the client. `cd backend && npm test` asserts this; keep it passing.
+- `fixedBreakdown` is the only field that carries bill-derived information, so it is fenced the
+  same way: each entry is rebuilt key by key as `{label, net, vatRate, gross, qty, unit}` and may
+  carry **safe charge categories and amounts ONLY**. Labels are mapped server-side to a fixed
+  vocabulary such as "Tarifa de disponibilidade", "Saneamento fixo", "Taxa DGEG",
+  "Contribuição audiovisual", and "Resíduos urbanos (RSU)"; raw model text never reaches the
+  client, and an unrecognised label becomes "Encargo fixo". Every charge `BILL_PROMPT` asks the
+  model to extract needs a rule in `safeFixedChargeLabel()`, or two different charges both land
+  on that fallback and the user sees "Encargo fixo" twice with no way to tell them apart. `unit`
+  is fenced identically. Never a customer or account-holder name, address, NIF, IBAN, account, contract, CPE,
+  CUI or meter ID, and no free-form sentence the model wrote itself. Anything else read off the
+  bill does not go in this field. The privacy test in `backend/validate.test.js` asserts the
+  per-line key set; keep it passing.
 - Never log file contents, extracted text, raw model responses, or filenames. Log only:
   timestamp, endpoint, status, duration in ms, file size in bytes.
 - AI calls must use a paid provider that does not train on submitted data. Gemini's paid tier
